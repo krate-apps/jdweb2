@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -7,13 +7,32 @@ import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
 import { formatSize, formatSpeed } from '@/lib/format'
 import { setLocale } from '@/i18n'
+import { getDialog, listDialogs } from '@/api/jd'
 import AddLinksModal from '@/components/modals/AddLinksModal.vue'
+import PasswordModal from '@/components/modals/PasswordModal.vue'
 
 const { t, locale } = useI18n()
 const auth = useAuthStore()
 const app = useAppStore()
 const downloads = useDownloadsStore()
 const router = useRouter()
+const passwordDialogId = ref<number | null>(null)
+let dialogTimer: ReturnType<typeof setInterval> | null = null
+
+async function pollDialogs() {
+  try {
+    const ids = (await listDialogs()) ?? []
+    for (const id of ids) {
+      const dialog = await getDialog(id)
+      if (/password/i.test(dialog.type ?? '')) {
+        passwordDialogId.value = id
+        return
+      }
+    }
+  } catch {
+    /* ignore while JD is offline */
+  }
+}
 
 onMounted(async () => {
   downloads.startPolling()
@@ -21,11 +40,16 @@ onMounted(async () => {
   try {
     await app.loadPublicConfig()
   } catch {
-    /* config optional until authenticated session is warm */
+    /* public config requires a warm session */
   }
+  void pollDialogs()
+  dialogTimer = setInterval(() => void pollDialogs(), 4000)
 })
 
-onUnmounted(() => downloads.stopPolling())
+onUnmounted(() => {
+  downloads.stopPolling()
+  if (dialogTimer) clearInterval(dialogTimer)
+})
 
 async function onLogout() {
   await auth.logout()
@@ -131,5 +155,10 @@ async function onLogout() {
     </footer>
 
     <AddLinksModal v-if="app.showAddLinks" @close="app.showAddLinks = false" />
+    <PasswordModal
+      v-if="passwordDialogId != null"
+      :dialog-id="passwordDialogId"
+      @close="passwordDialogId = null"
+    />
   </div>
 </template>

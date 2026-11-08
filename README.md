@@ -8,6 +8,12 @@ jdweb serves a Vue interface and a small authenticated API that talks to JDownlo
 
 English documentation is maintained in [`wiki/`](wiki/) and published to the [project Wiki](https://github.com/krate-apps/jdweb/wiki).
 
+After creating the first Wiki page once in the GitHub UI (so the `jdweb.wiki` remote exists), sync with:
+
+```bash
+./scripts/publish-wiki.sh
+```
+
 ## Quick start
 
 ```bash

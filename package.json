@@ -9,7 +9,8 @@
     "dev:web": "pnpm --filter ./web dev",
     "build": "pnpm --filter ./web build && pnpm --filter ./server build",
     "start": "pnpm --filter ./server start",
-    "typecheck": "pnpm --filter ./web typecheck && pnpm --filter ./server typecheck"
+    "typecheck": "pnpm --filter ./web typecheck && pnpm --filter ./server typecheck",
+    "wiki:publish": "./scripts/publish-wiki.sh"
   },
   "engines": {
     "node": ">=20"
