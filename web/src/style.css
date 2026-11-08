@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --radius-sm: 10px;
+  --radius-lg: 14px;
+
+  --color-background: var(--jd-background);
+  --color-foreground: var(--jd-foreground);
+  --color-surface: var(--jd-surface);
+  --color-surface-2: var(--jd-surface-2);
+  --color-surface-3: var(--jd-surface-3);
+  --color-muted: var(--jd-fg-muted);
+  --color-border: var(--jd-border);
+  --color-input: var(--jd-input);
+  --color-primary: var(--jd-primary);
+  --color-primary-fg: var(--jd-primary-fg);
+  --color-accent: var(--jd-accent);
+  --color-accent-text: var(--jd-accent-text);
+  --color-danger: var(--jd-destructive);
+  --color-danger-text: var(--jd-destructive-text);
+  --color-ring: var(--jd-ring);
+  --color-speed-down: var(--jd-speed-down);
+  --color-speed-up: var(--jd-speed-up);
+  --color-state-down: var(--jd-state-downloading);
+  --color-state-seed: var(--jd-state-seeding);
+  --color-state-paused: var(--jd-state-paused);
+  --color-state-stopped: var(--jd-state-stopped);
+  --color-state-error: var(--jd-state-error);
+}
+
+:root,
+:root[data-theme='dark'] {
+  --jd-background: #171519;
+  --jd-foreground: #f5f5f5;
+  --jd-surface: #1c1a1f;
+  --jd-surface-2: #222027;
+  --jd-surface-3: #2a272e;
+  --jd-fg-muted: #a3a3a3;
+  --jd-border: #3f3f46;
+  --jd-input: #141218;
+  --jd-primary: #0ea5e9;
+  --jd-primary-fg: #0b1220;
+  --jd-accent: #38bdf8;
+  --jd-accent-text: #7dd3fc;
+  --jd-destructive: #ef4444;
+  --jd-destructive-text: #f87171;
+  --jd-ring: #38bdf8;
+  --jd-focus: rgba(14, 165, 233, 0.35);
+  --jd-speed-down: #38bdf8;
+  --jd-speed-up: #22c55e;
+  --jd-prg-start: #0284c7;
+  --jd-prg-end: #38bdf8;
+  --jd-state-downloading: #38bdf8;
+  --jd-state-seeding: #22c55e;
+  --jd-state-paused: #fbbf24;
+  --jd-state-stopped: #a3a3a3;
+  --jd-state-error: #ef4444;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --jd-background: #d8dee8;
+  --jd-foreground: #0f172a;
+  --jd-surface: #e8edf4;
+  --jd-surface-2: #dde3ec;
+  --jd-surface-3: #cfd6e0;
+  --jd-fg-muted: #334155;
+  --jd-border: #94a3b8;
+  --jd-input: #f8fafc;
+  --jd-primary: #0284c7;
+  --jd-primary-fg: #ffffff;
+  --jd-accent: #0369a1;
+  --jd-accent-text: #0c4a6e;
+  --jd-destructive: #b91c1c;
+  --jd-destructive-text: #991b1b;
+  --jd-ring: #0284c7;
+  --jd-focus: rgba(2, 132, 199, 0.32);
+  --jd-speed-down: #0369a1;
+  --jd-speed-up: #15803d;
+  --jd-prg-start: #0369a1;
+  --jd-prg-end: #0ea5e9;
+  --jd-state-downloading: #0284c7;
+  --jd-state-seeding: #15803d;
+  --jd-state-paused: #b45309;
+  --jd-state-stopped: #475569;
+  --jd-state-error: #b91c1c;
+  color-scheme: light;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  font-family: var(--font-sans);
+  background: var(--jd-background);
+  color: var(--jd-foreground);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--jd-ring);
+  outline-offset: 2px;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, var(--jd-prg-start), var(--jd-prg-end));
+}
