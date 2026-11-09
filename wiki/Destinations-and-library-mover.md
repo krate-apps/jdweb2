@@ -12,7 +12,7 @@ When adding links, choose a destination kind:
 
 JDownloader is told to save into the staging path. You can change a package’s destination later from the download list.
 
-Destination title fields suggest existing folders from `GET /api/library/movies` and `GET /api/library/shows` (optional `?path=` for a subfolder). Choosing an existing series can prefill the highest `Season N` folder found under that show.
+Destination title fields suggest existing folders from `GET /api/library/movies`, `GET /api/library/shows`, and `GET /api/library/other` (optional `?path=` for a subfolder). Choosing an existing series can prefill the highest `Season N` folder found under that show.
 
 ## Library mover
 

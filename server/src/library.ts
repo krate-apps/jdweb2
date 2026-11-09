@@ -2,10 +2,12 @@ import { readdir } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import { config } from './config.js'
 
-export type LibraryRoot = 'movies' | 'shows'
+export type LibraryRoot = 'movies' | 'shows' | 'other'
 
 function rootDir(root: LibraryRoot): string {
-  return root === 'movies' ? config.moviesDir : config.showsDir
+  if (root === 'movies') return config.moviesDir
+  if (root === 'shows') return config.showsDir
+  return config.otherDir
 }
 
 /** Resolve a path under a library root; rejects traversal outside the root. */
@@ -38,5 +40,5 @@ export async function listLibraryFolders(root: LibraryRoot, subpath = ''): Promi
 }
 
 export function isLibraryRoot(value: string): value is LibraryRoot {
-  return value === 'movies' || value === 'shows'
+  return value === 'movies' || value === 'shows' || value === 'other'
 }

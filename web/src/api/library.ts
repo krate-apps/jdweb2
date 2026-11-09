@@ -1,6 +1,6 @@
 import { apiJson } from './http'
 
-export type LibraryRoot = 'movies' | 'shows'
+export type LibraryRoot = 'movies' | 'shows' | 'other'
 
 /** List subdirectory names under a library root (optional relative path). */
 export async function listLibraryFolders(root: LibraryRoot, path = ''): Promise<string[]> {

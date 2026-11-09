@@ -21,6 +21,7 @@ const { t } = useI18n()
 const listId = useId()
 const movies = ref<string[]>([])
 const shows = ref<string[]>([])
+const other = ref<string[]>([])
 
 const titleLabel = computed(() => {
   if (props.kind === 'movies') return t('destination.titleMovie')
@@ -31,15 +32,20 @@ const titleLabel = computed(() => {
 const titlePlaceholder = computed(() => {
   if (props.kind === 'movies') return t('destination.placeholderMovie')
   if (props.kind === 'shows') return t('destination.placeholderShow')
-  return ''
+  return t('destination.placeholderOther')
 })
 
-const suggestions = computed(() => (props.kind === 'movies' ? movies.value : props.kind === 'shows' ? shows.value : []))
+const suggestions = computed(() => {
+  if (props.kind === 'movies') return movies.value
+  if (props.kind === 'shows') return shows.value
+  return other.value
+})
 
 async function loadLibrary() {
-  ;[movies.value, shows.value] = await Promise.all([
+  ;[movies.value, shows.value, other.value] = await Promise.all([
     listLibraryFolders('movies'),
     listLibraryFolders('shows'),
+    listLibraryFolders('other'),
   ])
 }
 
@@ -87,10 +93,10 @@ watch(
         class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
         :value="title"
         :placeholder="titlePlaceholder"
-        :list="kind === 'other' ? undefined : `${listId}-titles`"
+        :list="`${listId}-titles`"
         @input="emit('update:title', ($event.target as HTMLInputElement).value)"
       />
-      <datalist v-if="kind !== 'other'" :id="`${listId}-titles`">
+      <datalist :id="`${listId}-titles`">
         <option v-for="name in suggestions" :key="name" :value="name" />
       </datalist>
     </div>

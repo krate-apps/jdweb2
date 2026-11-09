@@ -61,6 +61,7 @@ export default {
     season: 'Saison',
     placeholderMovie: 'ex. Dune : Deuxième partie (2024)',
     placeholderShow: 'Choisir ou saisir un nom',
+    placeholderOther: 'Choisir ou saisir un dossier',
   },
   downloads: {
     name: 'Nom',
