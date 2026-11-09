@@ -11,6 +11,8 @@
     "start": "pnpm --filter ./server start",
     "rebuild": "pnpm build && pnpm --filter ./server start",
     "typecheck": "pnpm --filter ./web typecheck && pnpm --filter ./server typecheck",
+    "test:e2e": "node e2e/api-smoke.mjs",
+    "test:e2e:ui": "pnpm dlx playwright@1.51.0 test",
     "docs:publish": "./scripts/publish-docs.sh",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run"

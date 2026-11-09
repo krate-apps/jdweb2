@@ -20,3 +20,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm --filter ./server test
+      - run: pnpm build
+      - run: rm -f data/e2e.sqlite data/e2e.sqlite-*
+      - run: pnpm test:e2e
+        env:
+          CI: true
+          MOCK_JD_PORT: 13128
+      - run: pnpm dlx playwright@1.51.0 install --with-deps chromium
+      - run: pnpm test:e2e:ui
+        env:
+          CI: true
+          MOCK_JD_PORT: 13128
