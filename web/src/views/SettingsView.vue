@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Bell, Download, KeyRound, Link2, Palette, Users } from '@lucide/vue'
+import { Bell, Database, Download, FolderOpen, KeyRound, Link2, Palette, Users } from '@lucide/vue'
 import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
 import * as jd from '@/api/jd'
@@ -15,8 +15,19 @@ import * as webhooksApi from '@/api/webhooks'
 import type { Webhook, WebhookEvent } from '@/api/webhooks'
 import * as settingsApi from '@/api/settings'
 import type { AppSettings } from '@/api/settings'
+import * as stagingApi from '@/api/staging'
+import type { StagingEntry } from '@/api/staging'
+import { formatSize } from '@/lib/format'
 
-type SectionId = 'connection' | 'downloads' | 'account' | 'users' | 'notifications' | 'appearance'
+type SectionId =
+  | 'connection'
+  | 'downloads'
+  | 'staging'
+  | 'data'
+  | 'account'
+  | 'users'
+  | 'notifications'
+  | 'appearance'
 
 const { t, locale } = useI18n()
 const app = useAppStore()
@@ -73,10 +84,19 @@ const webhookEventOptions: WebhookEvent[] = [
   'mover.failed',
 ]
 const error = ref<string | null>(null)
+const stagingPath = ref('')
+const stagingEntries = ref<StagingEntry[]>([])
+const stagingError = ref<string | null>(null)
+const stagingBusy = ref(false)
+const backupBusy = ref(false)
+const backupMsg = ref<string | null>(null)
+const backupError = ref<string | null>(null)
 
 const nav = computed(() => [
   { id: 'connection' as const, label: t('settings.navConnection'), icon: Link2 },
   { id: 'downloads' as const, label: t('settings.navDownloads'), icon: Download },
+  { id: 'staging' as const, label: t('settings.navStaging'), icon: FolderOpen },
+  { id: 'data' as const, label: t('settings.navData'), icon: Database },
   { id: 'account' as const, label: t('settings.navAccount'), icon: KeyRound },
   { id: 'users' as const, label: t('settings.navUsers'), icon: Users },
   { id: 'notifications' as const, label: t('settings.navNotifications'), icon: Bell },
@@ -354,6 +374,83 @@ async function removePassword(value: string) {
   await jd.setPasswordList(next)
   passwords.value = next
 }
+
+async function loadStaging(path = stagingPath.value) {
+  stagingBusy.value = true
+  stagingError.value = null
+  try {
+    const res = await stagingApi.listStaging(path)
+    stagingPath.value = res.path
+    stagingEntries.value = res.entries
+  } catch (err) {
+    stagingError.value = err instanceof ApiError ? err.message : t('common.error')
+  } finally {
+    stagingBusy.value = false
+  }
+}
+
+function openStagingDir(entry: StagingEntry) {
+  if (entry.kind !== 'dir') return
+  void loadStaging(entry.path)
+}
+
+function stagingUp() {
+  if (!stagingPath.value) return
+  const parts = stagingPath.value.split('/').filter(Boolean)
+  parts.pop()
+  void loadStaging(parts.join('/'))
+}
+
+async function removeStagingEntry(entry: StagingEntry) {
+  if (!confirm(t('settings.stagingDeleteConfirm', { name: entry.name }))) return
+  stagingBusy.value = true
+  stagingError.value = null
+  try {
+    await stagingApi.deleteStaging(entry.path)
+    await loadStaging()
+  } catch (err) {
+    stagingError.value = err instanceof Error ? err.message : t('common.error')
+  } finally {
+    stagingBusy.value = false
+  }
+}
+
+async function exportBackup() {
+  backupBusy.value = true
+  backupError.value = null
+  backupMsg.value = null
+  try {
+    await stagingApi.downloadBackup()
+    backupMsg.value = t('settings.backupExported')
+  } catch (err) {
+    backupError.value = err instanceof Error ? err.message : t('common.error')
+  } finally {
+    backupBusy.value = false
+  }
+}
+
+async function onRestoreFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (!confirm(t('settings.backupRestoreConfirm'))) return
+  backupBusy.value = true
+  backupError.value = null
+  backupMsg.value = null
+  try {
+    const res = await stagingApi.restoreBackup(file)
+    backupMsg.value = res.restartRequired ? t('settings.backupRestoreRestart') : t('settings.backupRestored')
+  } catch (err) {
+    backupError.value = err instanceof Error ? err.message : t('common.error')
+  } finally {
+    backupBusy.value = false
+  }
+}
+
+watch(section, (id) => {
+  if (id === 'staging') void loadStaging('')
+})
 </script>
 
 <template>
@@ -786,8 +883,71 @@ async function removePassword(value: string) {
           </section>
         </template>
 
+        <template v-else-if="section === 'staging'">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-sm font-semibold mr-auto">{{ t('settings.stagingBrowser') }}</h2>
+              <button type="button" class="jd-btn jd-btn-ghost text-xs" :disabled="!stagingPath || stagingBusy" @click="stagingUp">
+                {{ t('settings.stagingUp') }}
+              </button>
+              <button type="button" class="jd-btn jd-btn-ghost text-xs" :disabled="stagingBusy" @click="loadStaging()">
+                {{ t('accounts.refresh') }}
+              </button>
+            </div>
+            <p class="text-xs text-muted font-mono truncate">{{ stagingPath || '/' }}</p>
+            <p class="text-xs text-muted">{{ t('settings.stagingHint') }}</p>
+            <p v-if="stagingError" class="text-xs text-danger-text">{{ stagingError }}</p>
+            <ul v-if="stagingEntries.length" class="divide-y divide-border/50 rounded-[12px] border border-border overflow-hidden">
+              <li
+                v-for="entry in stagingEntries"
+                :key="entry.path"
+                class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface-2/40"
+              >
+                <button
+                  type="button"
+                  class="min-w-0 flex-1 text-left truncate"
+                  :class="entry.kind === 'dir' ? 'font-medium text-accent-text' : ''"
+                  @click="openStagingDir(entry)"
+                >
+                  <span v-if="entry.kind === 'dir'" class="text-muted mr-1">[dir]</span>{{ entry.name }}
+                </button>
+                <span v-if="entry.kind === 'file'" class="text-xs text-muted tabular-nums shrink-0">
+                  {{ formatSize(entry.size) }}
+                </span>
+                <button
+                  type="button"
+                  class="text-xs text-danger-text shrink-0"
+                  :disabled="stagingBusy"
+                  @click="removeStagingEntry(entry)"
+                >
+                  {{ t('common.remove') }}
+                </button>
+              </li>
+            </ul>
+            <p v-else class="text-sm text-muted text-center py-6">{{ t('settings.stagingEmpty') }}</p>
+          </section>
+        </template>
+
+        <template v-else-if="section === 'data'">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
+            <h2 class="text-sm font-semibold">{{ t('settings.backupTitle') }}</h2>
+            <p class="text-xs text-muted leading-relaxed">{{ t('settings.backupHint') }}</p>
+            <p v-if="backupError" class="text-xs text-danger-text">{{ backupError }}</p>
+            <p v-if="backupMsg" class="text-xs text-accent-text">{{ backupMsg }}</p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="jd-btn jd-btn-primary" :disabled="backupBusy" @click="exportBackup">
+                {{ t('settings.backupExport') }}
+              </button>
+              <label class="jd-btn jd-btn-ghost cursor-pointer">
+                {{ t('settings.backupImport') }}
+                <input type="file" accept=".sqlite,application/octet-stream" class="sr-only" @change="onRestoreFile" />
+              </label>
+            </div>
+          </section>
+        </template>
+
         <!-- Appearance -->
-        <template v-else>
+        <template v-else-if="section === 'appearance'">
           <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <h2 class="text-sm font-semibold">{{ t('settings.appearance') }}</h2>
             <div class="grid sm:grid-cols-2 gap-3">
