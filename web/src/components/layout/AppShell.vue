@@ -36,6 +36,21 @@ function onSpeedEscape(e: KeyboardEvent) {
   if (e.key === 'Escape') showSpeedPopover.value = false
 }
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  return target.isContentEditable
+}
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  onSpeedEscape(e)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l' && !isTypingTarget(e.target)) {
+    e.preventDefault()
+    app.showAddLinks = true
+  }
+}
+
 async function pollDialogs() {
   try {
     const ids = (await listDialogs()) ?? []
@@ -62,13 +77,13 @@ onMounted(async () => {
   }
   void pollDialogs()
   dialogTimer = setInterval(() => void pollDialogs(), 4000)
-  document.addEventListener('keydown', onSpeedEscape)
+  document.addEventListener('keydown', onGlobalKeydown)
 })
 
 onUnmounted(() => {
   downloads.stopPolling()
   if (dialogTimer) clearInterval(dialogTimer)
-  document.removeEventListener('keydown', onSpeedEscape)
+  document.removeEventListener('keydown', onGlobalKeydown)
 })
 
 async function onLogout() {
