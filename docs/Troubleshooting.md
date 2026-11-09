@@ -34,7 +34,7 @@ Env seed (`JDWEB_USER` / `JDWEB_PASSWORD`) only runs when the users table is emp
 
 ## JDownloader unreachable
 
-- Check `JD_API_URL` from the **jdweb** host/container (`curl "$JD_API_URL"`).
+- Check the JD API URL in Settings (or `GET /api/health` → `jdApiUrl` / `jdReachable`) from the **jdweb** host/container.
 - JD local API must be enabled and listening.
 - Docker: `127.0.0.1` inside the container is not the host — use the host gateway or a shared network.
 - UI shows offline; logs include structured `jd call failed` / `jd proxy failed` lines; `/api/metrics` increments `jd_errors`.

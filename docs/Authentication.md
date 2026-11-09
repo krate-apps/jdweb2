@@ -22,7 +22,9 @@ Successful login:
 1. Inserts a row in `sessions` (`id`, `user_id`, `user_agent`, `ip`, timestamps).
 2. Sets an HTTP-only cookie `jdweb_session` with a signed opaque id (`JDWEB_SESSION_SECRET`).
 
-Cookie path follows `JDWEB_BASE_PATH` (or `/`). Logout (`POST /api/auth/logout`) deletes the current session and clears the cookie.
+Cookie path follows `JDWEB_BASE_PATH` (or `/`). Flags: **HttpOnly**, **SameSite=Lax**, and **Secure** when the request is HTTPS or `X-Forwarded-Proto: https`. Logout (`POST /api/auth/logout`) deletes the current session and clears the cookie.
+
+CSRF: same-origin SPA + `SameSite=Lax` is enough for cookie-authenticated JSON `PATCH`/`POST`. If cookies were ever sent cross-site, add a CSRF token.
 
 Manage sessions in Settings or via API:
 
@@ -70,4 +72,6 @@ Accounts UI and `/api/hosters`: create, enable/disable, password update, delete,
 
 ## Protected routes
 
-Anything under `/api/*` except health, setup status, setup admin (localhost), and login requires a valid session. The JDownloader proxy lives at `/api/jd/*`.
+Anything under `/api/*` except health, setup status, setup admin / JD probe (localhost), and login requires a valid session. The JDownloader proxy lives at `/api/jd/*`.
+
+Login and setup are **rate-limited** per client IP. Failed and successful logins are recorded in `audit_events`.

@@ -8,7 +8,8 @@ services:
     ports:
       - "${JDWEB_PORT:-8787}:8787"
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       JDWEB_HOST: 0.0.0.0
       JDWEB_PORT: 8787
@@ -20,3 +21,15 @@ services:
     volumes:
       - ./data:/data
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8787'+(process.env.JDWEB_BASE_PATH||'')+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

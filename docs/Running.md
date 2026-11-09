@@ -22,18 +22,21 @@ Do **not** expose Vite (`5173`) on the internet. It is a development tool. Produ
 ## Production
 
 ```bash
-cp .env.example .env
-# Edit .env — secrets, JD_API_URL, base path, library dirs
+cp .env.example .env   # optional; secrets auto-create under data/
 pnpm install
 pnpm build
 pnpm start
 ```
+
+Configure JD URL and library paths in the setup wizard or Settings (SQLite). Boot env is documented in [Configuration](Configuration).
 
 Health check (no auth):
 
 ```bash
 curl -sS "http://127.0.0.1:8787${JDWEB_BASE_PATH}/api/health"
 ```
+
+Response includes `jdReachable`, `uiBuilt`, `settingsReady`, and `needsSetup`.
 
 ### Listen address
 
@@ -72,8 +75,7 @@ Adjust paths and ensure `pnpm build` has been run as that user (or deploy prebui
 ## Docker
 
 ```bash
-cp .env.example .env
-# secrets, JD_API_URL (reachable from the container), optional JDWEB_BASE_PATH
+cp .env.example .env   # optional
 docker compose up -d --build
 ```
 
@@ -81,8 +83,8 @@ Compose:
 
 - Builds a multi-stage image (web + server)
 - Sets `JDWEB_HOST=0.0.0.0` inside the container
-- Mounts `./data` → `/data` for SQLite, staging, and library dirs
-- Loads `.env` (override paths are set to `/data/...`)
+- Mounts `./data` → `/data` for SQLite, `secrets.env`, staging, and library dirs
+- Loads `.env` when present (override paths are set to `/data/...`)
 
 Path-prefix build:
 
@@ -91,18 +93,18 @@ docker compose build --build-arg JDWEB_BASE_PATH=/alice/jdweb
 docker compose up -d
 ```
 
-There is **no** JDownloader container. Keep JD on the host (or elsewhere) and set `JD_API_URL` accordingly.
+There is **no** JDownloader container. Keep JD on the host (or elsewhere) and set the JD API URL in Settings after first login (must be a private/loopback URL reachable from the container).
 
 ## JDownloader local API
 
-Enable JDownloader’s local HTTP API and point `JD_API_URL` at it. Typical settings:
+Enable JDownloader’s local HTTP API and point jdweb at it (Settings → JDownloader URL). Typical settings:
 
 - Listen on localhost only
-- Port matching `JD_API_URL` (for example `3128`)
+- Port such as `3128` or `49247` (use Detect in Settings / setup)
 
 jdweb proxies authenticated browser requests to that API. **Do not** expose the JDownloader port to the internet.
 
-Ensure JD download directories align with `JDWEB_STAGING_DIR` (or configure destinations from the UI so packages land under staging).
+Ensure JD download directories align with the staging directory configured in Settings (or destinations from the UI so packages land under staging).
 
 ## Logs and metrics
 

@@ -4,11 +4,13 @@
 
 When adding links (or moving a package), choose a destination kind:
 
-| Kind | Staging under `JDWEB_STAGING_DIR` | Library root |
-|------|-----------------------------------|--------------|
-| Movies | `movies/<Title>` | `JDWEB_MOVIES_DIR/<Title>` |
-| Series | `shows/<Name>/Season <N>` | `JDWEB_SHOWS_DIR/<Name>/Season <N>` |
-| Other | `downloads/<Name>` | `JDWEB_OTHER_DIR/<Name>` |
+| Kind | Staging under staging dir | Library root |
+|------|---------------------------|--------------|
+| Movies | `movies/<Title>` | movies library `/<Title>` |
+| Series | `shows/<Name>/Season <N>` | shows library `/<Name>/Season <N>` |
+| Other | `downloads/<Name>` | other library `/<Name>` |
+
+Paths are **app settings** (SQLite / Settings UI), seeded once from env if present.
 
 JDownloader is told to save into the **staging** path. You can change a package’s destination later from the download list (context menu → move).
 
@@ -26,7 +28,7 @@ Optional query `?path=` lists a subfolder. Choosing an existing series can prefi
 
 ## Library mover
 
-When `JDWEB_MOVER_INTERVAL_MS` is greater than zero, jdweb periodically looks for **finished** packages whose `saveTo` sits under the staging tree and maps to a library destination. For each candidate it:
+When the mover interval (Settings) is greater than zero, jdweb periodically looks for **finished** packages whose `saveTo` sits under the staging tree and maps to a library destination. For each candidate it:
 
 1. Waits until extraction looks ready (best-effort via JD extraction API)
 2. Copies the package folder to a temporary name beside the library destination

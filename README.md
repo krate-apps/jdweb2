@@ -28,27 +28,19 @@ Browser ──HTTPS──▶ reverse proxy ──HTTP──▶ jdweb (:8787)
 **Requirements:** Node.js 20+, pnpm 9, JDownloader with the local HTTP API enabled.
 
 ```bash
-pnpm install
-cp .env.example .env
-# Set JDWEB_SESSION_SECRET, JDWEB_DATA_KEY, JD_API_URL (and JDWEB_BASE_PATH if needed)
-pnpm dev
+pnpm install && pnpm build && pnpm start
 ```
+
+Secrets are written to `data/secrets.env` on first boot if missing. Open the UI on localhost and complete the setup wizard (admin, JDownloader URL, library paths). Optional boot env: copy `.env.example` — see [docs/Configuration.md](docs/Configuration.md).
 
 | | URL |
 |---|-----|
-| UI (Vite) | http://127.0.0.1:5173 |
-| API | http://127.0.0.1:8787 |
-
-**Production**
-
-```bash
-pnpm install && pnpm build && pnpm start
-```
+| Production UI/API | http://127.0.0.1:8787 |
+| Dev (`pnpm dev`) | UI http://127.0.0.1:5173 · API :8787 |
 
 **Docker**
 
 ```bash
-cp .env.example .env
 docker compose up -d --build
 ```
 

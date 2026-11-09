@@ -20,7 +20,7 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 Browser  --HTTPS-->  reverse proxy  --HTTP-->  jdweb (:8787)
                                               |-- SQLite (users, sessions, hosters, moves, webhooks)
                                               |-- AES hoster secrets
-                                              '-- HTTP --> JDownloader local API (JD_API_URL)
+                                              '-- HTTP --> JDownloader local API (Settings)
 ```
 
 - **Auth** is owned by jdweb (argon2id users + server-side sessions), not by JDownloader.
