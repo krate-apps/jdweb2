@@ -40,21 +40,21 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="emit('close')">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" @click.self="emit('close')">
     <div
       role="dialog"
       aria-labelledby="about-title"
-      class="w-full max-w-sm rounded-[14px] bg-surface border border-border p-5 space-y-4 shadow-lg"
+      class="jd-panel w-full max-w-sm rounded-[16px] p-6 space-y-5"
     >
       <div class="flex items-start gap-3">
         <BrandMark :size="40" />
         <div class="min-w-0 space-y-0.5">
-          <h2 id="about-title" class="text-lg font-semibold tracking-tight">{{ t('about.title') }}</h2>
-          <p class="text-sm text-muted">{{ t('about.tagline') }}</p>
+          <h2 id="about-title" class="text-xl font-semibold tracking-tight">{{ t('about.title') }}</h2>
+          <p class="text-sm text-muted leading-relaxed">{{ t('about.tagline') }}</p>
         </div>
       </div>
 
-      <dl class="space-y-2 text-sm">
+      <dl class="space-y-2.5 text-sm">
         <div class="flex justify-between gap-3">
           <dt class="text-muted">{{ t('about.version') }}</dt>
           <dd class="font-mono tabular-nums">{{ version }}</dd>
@@ -75,20 +75,16 @@ onMounted(async () => {
 
       <p class="text-xs text-muted leading-relaxed">{{ t('about.blurb') }}</p>
 
-      <div class="flex flex-wrap gap-2 pt-1 border-t border-border">
+      <div class="flex flex-wrap gap-2 pt-2 border-t border-border">
         <a
           href="https://github.com/krate-apps/jdweb"
           target="_blank"
           rel="noopener noreferrer"
-          class="px-3 py-1.5 rounded-[10px] border border-border text-sm hover:bg-surface-2"
+          class="jd-btn jd-btn-ghost text-sm"
         >
           {{ t('about.github') }}
         </a>
-        <button
-          type="button"
-          class="ml-auto px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm"
-          @click="emit('close')"
-        >
+        <button type="button" class="jd-btn jd-btn-primary ml-auto text-sm" @click="emit('close')">
           {{ t('common.close') }}
         </button>
       </div>

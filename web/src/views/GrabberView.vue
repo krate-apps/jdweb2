@@ -67,15 +67,15 @@ async function onMenuSelect(action: string) {
 </script>
 
 <template>
-  <div class="p-3 space-y-3" @click="hideMenu">
+  <div class="p-4 md:p-5 space-y-4" @click="hideMenu">
     <div class="flex flex-wrap gap-2 items-center">
-      <h1 class="text-lg font-semibold mr-auto">{{ t('grabber.title') }}</h1>
-      <button type="button" class="px-2 py-1 text-sm rounded-[10px] bg-primary text-primary-fg" @click="confirmAll">
+      <h1 class="text-2xl font-semibold tracking-tight mr-auto">{{ t('grabber.title') }}</h1>
+      <button type="button" class="jd-btn jd-btn-primary" @click="confirmAll">
         {{ t('grabber.confirmAll') }}
       </button>
       <button
         type="button"
-        class="px-2 py-1 text-sm rounded-[10px] border border-border"
+        class="jd-btn jd-btn-ghost disabled:opacity-40"
         :disabled="!grabber.selected.size"
         @click="confirmSelected"
       >
@@ -83,49 +83,51 @@ async function onMenuSelect(action: string) {
       </button>
       <button
         type="button"
-        class="px-2 py-1 text-sm rounded-[10px] border border-border"
+        class="jd-btn jd-btn-ghost disabled:opacity-40"
         :disabled="!grabber.selected.size"
         @click="grabber.removeSelected()"
       >
         {{ t('grabber.removeSelected') }}
       </button>
-      <button type="button" class="px-2 py-1 text-sm rounded-[10px] bg-accent text-primary-fg" @click="app.showAddLinks = true">
+      <button type="button" class="jd-btn jd-btn-primary" @click="app.showAddLinks = true">
         {{ t('grabber.addLinks') }}
       </button>
     </div>
 
-    <table v-if="grabber.links.length" class="w-full text-sm">
-      <thead>
-        <tr class="text-left text-xs text-muted border-b border-border">
-          <th class="w-8 py-1" />
-          <th class="py-1">{{ t('downloads.name') }}</th>
-          <th class="py-1 text-right hidden md:table-cell">{{ t('downloads.size') }}</th>
-          <th class="py-1 hidden md:table-cell">{{ t('downloads.hoster') }}</th>
-          <th class="py-1">{{ t('downloads.status') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="link in grabber.links"
-          :key="link.uuid"
-          class="border-b border-border/50 hover:bg-surface-2/50"
-          @contextmenu.prevent="showMenu($event, link.uuid)"
-        >
-          <td class="py-1.5">
-            <input
-              type="checkbox"
-              :checked="grabber.selected.has(link.uuid)"
-              @change="grabber.toggleSelect(link.uuid)"
-            />
-          </td>
-          <td class="py-1.5 truncate max-w-[320px]" :title="link.name">{{ link.name }}</td>
-          <td class="py-1.5 text-right hidden md:table-cell">{{ formatSize(link.bytesTotal) }}</td>
-          <td class="py-1.5 hidden md:table-cell">{{ link.host || '—' }}</td>
-          <td class="py-1.5 text-muted">{{ link.availability || '—' }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p v-else class="text-sm text-muted text-center py-10">{{ t('grabber.empty') }}</p>
+    <div v-if="grabber.links.length" class="jd-panel rounded-[16px] overflow-hidden overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-muted border-b border-border bg-surface-2/40">
+            <th class="w-10 px-3 py-2.5" />
+            <th class="px-3 py-2.5 font-medium">{{ t('downloads.name') }}</th>
+            <th class="px-3 py-2.5 font-medium text-right hidden md:table-cell">{{ t('downloads.size') }}</th>
+            <th class="px-3 py-2.5 font-medium hidden md:table-cell">{{ t('downloads.hoster') }}</th>
+            <th class="px-3 py-2.5 font-medium">{{ t('downloads.status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="link in grabber.links"
+            :key="link.uuid"
+            class="border-b border-border/40 hover:bg-surface-2/35 transition-colors"
+            @contextmenu.prevent="showMenu($event, link.uuid)"
+          >
+            <td class="px-3 py-2.5">
+              <input
+                type="checkbox"
+                :checked="grabber.selected.has(link.uuid)"
+                @change="grabber.toggleSelect(link.uuid)"
+              />
+            </td>
+            <td class="px-3 py-2.5 truncate max-w-[320px] font-medium" :title="link.name">{{ link.name }}</td>
+            <td class="px-3 py-2.5 text-right hidden md:table-cell tabular-nums">{{ formatSize(link.bytesTotal) }}</td>
+            <td class="px-3 py-2.5 hidden md:table-cell">{{ link.host || '—' }}</td>
+            <td class="px-3 py-2.5 text-muted">{{ link.availability || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p v-else class="jd-panel rounded-[16px] text-sm text-muted text-center py-12">{{ t('grabber.empty') }}</p>
 
     <ContextMenu
       v-if="menu?.visible"
