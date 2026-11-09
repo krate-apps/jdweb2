@@ -30,6 +30,7 @@ import {
   setHosterEnabled,
   updateHosterPassword,
 } from './hosters.js'
+import { isLibraryRoot, listLibraryFolders } from './library.js'
 
 type Vars = { username: string }
 
@@ -258,6 +259,19 @@ app.get(mount('/api/config/public'), requireAuth, (c) =>
     moverEnabled: config.moverIntervalMs > 0,
   }),
 )
+
+app.get(mount('/api/library/:root'), requireAuth, async (c) => {
+  const rootParam = c.req.param('root') ?? ''
+  if (!isLibraryRoot(rootParam)) return c.json({ error: 'invalid_root' }, 400)
+  const path = c.req.query('path') ?? ''
+  try {
+    return c.json({ folders: await listLibraryFolders(rootParam, path) })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'list_failed'
+    if (message === 'invalid_path') return c.json({ error: message }, 400)
+    return c.json({ error: message }, 500)
+  }
+})
 
 app.post(mount('/api/destinations/resolve'), requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { listLibraryFolders } from '@/api/library'
 
 export type Kind = 'movies' | 'shows' | 'other'
 
@@ -17,6 +18,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const listId = useId()
+const movies = ref<string[]>([])
+const shows = ref<string[]>([])
 
 const titleLabel = computed(() => {
   if (props.kind === 'movies') return t('destination.titleMovie')
@@ -29,6 +33,35 @@ const titlePlaceholder = computed(() => {
   if (props.kind === 'shows') return t('destination.placeholderShow')
   return ''
 })
+
+const suggestions = computed(() => (props.kind === 'movies' ? movies.value : props.kind === 'shows' ? shows.value : []))
+
+async function loadLibrary() {
+  ;[movies.value, shows.value] = await Promise.all([
+    listLibraryFolders('movies'),
+    listLibraryFolders('shows'),
+  ])
+}
+
+onMounted(() => {
+  void loadLibrary()
+})
+
+/** Existing show: suggest its highest season number from library folders. */
+watch(
+  () => [props.kind, props.title] as const,
+  async ([kind, title]) => {
+    const name = title.trim()
+    if (kind !== 'shows' || !name || !shows.value.includes(name)) return
+    const seasons = (await listLibraryFolders('shows', name))
+      .map((f) => /^Season (\d+)$/i.exec(f)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .map(Number)
+    if (seasons.length && props.title.trim() === name) {
+      emit('update:season', Math.max(...seasons))
+    }
+  },
+)
 </script>
 
 <template>
@@ -54,8 +87,12 @@ const titlePlaceholder = computed(() => {
         class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
         :value="title"
         :placeholder="titlePlaceholder"
+        :list="kind === 'other' ? undefined : `${listId}-titles`"
         @input="emit('update:title', ($event.target as HTMLInputElement).value)"
       />
+      <datalist v-if="kind !== 'other'" :id="`${listId}-titles`">
+        <option v-for="name in suggestions" :key="name" :value="name" />
+      </datalist>
     </div>
     <div v-if="kind === 'shows'">
       <label class="block text-xs font-medium text-muted mb-1">{{ t('destination.season') }}</label>
