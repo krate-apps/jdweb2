@@ -36,16 +36,6 @@ function decodeSession(token: string): { username: string } | null {
   }
 }
 
-export function safeEqual(a: string, b: string): boolean {
-  const ba = Buffer.from(a)
-  const bb = Buffer.from(b)
-  if (ba.length !== bb.length) {
-    timingSafeEqual(ba, ba)
-    return false
-  }
-  return timingSafeEqual(ba, bb)
-}
-
 export function issueSession(c: Context, username: string): void {
   setCookie(c, COOKIE, encodeSession(username), {
     httpOnly: true,

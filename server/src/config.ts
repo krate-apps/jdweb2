@@ -1,4 +1,5 @@
 import { config as loadEnv } from 'dotenv'
+import { createHash } from 'node:crypto'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -25,13 +26,32 @@ export function normalizeBasePath(raw: string): string {
 
 const root = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 
+/** 32-byte AES key: JDWEB_DATA_KEY (64 hex chars) or derived from session secret in dev. */
+function resolveDataKey(): Buffer {
+  const raw = env('JDWEB_DATA_KEY')
+  if (raw) {
+    if (!/^[0-9a-fA-F]{64}$/.test(raw)) {
+      throw new Error('JDWEB_DATA_KEY must be 64 hex characters (32 bytes)')
+    }
+    return Buffer.from(raw, 'hex')
+  }
+  const secret = env('JDWEB_SESSION_SECRET', 'dev-only-change-me')
+  console.warn(
+    'JDWEB_DATA_KEY is unset; deriving a development key from JDWEB_SESSION_SECRET. Set JDWEB_DATA_KEY in production.',
+  )
+  return createHash('sha256').update(`jdweb-data-key:${secret}`).digest()
+}
+
 export const config = {
   host: env('JDWEB_HOST', '127.0.0.1'),
   port: envInt('JDWEB_PORT', 8787),
   basePath: normalizeBasePath(env('JDWEB_BASE_PATH', '')),
-  user: env('JDWEB_USER', 'admin'),
-  password: env('JDWEB_PASSWORD', 'changeme'),
+  /** Used only to seed the first admin when the users table is empty. */
+  seedUser: env('JDWEB_USER', ''),
+  seedPassword: env('JDWEB_PASSWORD', ''),
   sessionSecret: env('JDWEB_SESSION_SECRET', 'dev-only-change-me'),
+  dbPath: resolve(root, env('JDWEB_DB_PATH', './data/jdweb.sqlite')),
+  dataKey: resolveDataKey(),
   jdApiUrl: env('JD_API_URL', 'http://127.0.0.1:3128').replace(/\/+$/, ''),
   stagingDir: resolve(root, env('JDWEB_STAGING_DIR', './data/staging')),
   moviesDir: resolve(root, env('JDWEB_MOVIES_DIR', './data/library/movies')),
