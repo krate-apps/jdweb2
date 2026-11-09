@@ -88,11 +88,13 @@ Compose:
 - Mounts `./data` → `/data` for SQLite, `secrets.env`, staging, and library dirs
 - Loads `.env` when present (override paths are set to `/data/...`)
 
-The GHCR image has an empty `JDWEB_BASE_PATH`. For a path prefix, rebuild:
+Path prefix (runtime, no rebuild):
 
 ```bash
-JDWEB_BASE_PATH=/alice/jdweb docker compose up -d --build
+JDWEB_BASE_PATH=/alice/jdweb docker compose up -d
 ```
+
+Or set the prefix in Settings after first login (when env is unset) and restart.
 
 There is **no** JDownloader container. Keep JD on the host (or elsewhere) and set the JD API URL in Settings after first login (must be a private/loopback URL reachable from the container).
 

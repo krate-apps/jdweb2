@@ -33,7 +33,7 @@ pnpm start
 
 `pnpm build` compiles the Vue app (`web/dist`) and the TypeScript server (`server/dist`). The server listens on `JDWEB_HOST`:`JDWEB_PORT` and serves the SPA from `web/dist`.
 
-If you change `JDWEB_BASE_PATH`, rebuild so asset URLs match the public prefix.
+If you change the public path prefix, set `JDWEB_BASE_PATH` (Compose) or edit it in Settings and restart — no UI rebuild.
 
 ## Development
 
@@ -52,10 +52,10 @@ cp .env.example .env   # optional; secrets auto-create under the data volume
 docker compose up -d
 ```
 
-Mounting `./data` is enough for DB, secrets file, staging, and library. The GHCR image is built for `/`. With a path prefix, rebuild locally:
+Mounting `./data` is enough for DB, secrets file, staging, and library. Path prefix (no rebuild):
 
 ```bash
-JDWEB_BASE_PATH=/alice/jdweb docker compose up -d --build
+JDWEB_BASE_PATH=/alice/jdweb docker compose up -d
 ```
 
 JDownloader is **not** in the compose file. After start, set the JD API URL in Settings (from the container, often `http://host.docker.internal:3128` or the host gateway — must stay private/loopback per SSRF rules).

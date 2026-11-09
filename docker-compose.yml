@@ -1,13 +1,10 @@
 services:
   jdweb:
-    # Published image (root base path). Pin with JDWEB_VERSION or edit the tag.
+    # Published image works with any JDWEB_BASE_PATH at runtime (no rebuild).
     image: ghcr.io/krate-apps/jdweb:0.1.0
-    # Local / path-prefix rebuild: `docker compose up -d --build`
-    # with JDWEB_BASE_PATH set in the environment or .env
+    # Optional local build (also no base-path rebuild required):
     build:
       context: .
-      args:
-        JDWEB_BASE_PATH: ${JDWEB_BASE_PATH:-}
     ports:
       - "${JDWEB_PORT:-8787}:8787"
     env_file:
@@ -16,6 +13,8 @@ services:
     environment:
       JDWEB_HOST: 0.0.0.0
       JDWEB_PORT: 8787
+      # Public URL prefix, e.g. /trevor/jdweb — synced into Settings on boot
+      JDWEB_BASE_PATH: ${JDWEB_BASE_PATH:-}
       JDWEB_DB_PATH: /data/jdweb.sqlite
       JDWEB_STAGING_DIR: /data/staging
       JDWEB_MOVIES_DIR: /data/library/movies

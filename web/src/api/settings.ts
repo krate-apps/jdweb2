@@ -1,6 +1,7 @@
 import { apiJson } from './http'
 
 export interface AppSettings {
+  basePath: string
   jdApiUrl: string
   stagingDir: string
   moviesDir: string
@@ -9,17 +10,22 @@ export interface AppSettings {
   moverIntervalMs: number
 }
 
-export async function getSettings(): Promise<AppSettings> {
-  const res = await apiJson<{ settings: AppSettings }>('api/settings')
-  return res.settings
+export async function getSettings(): Promise<{
+  settings: AppSettings
+  basePathForcedByEnv: boolean
+}> {
+  return apiJson('api/settings')
 }
 
-export async function patchSettings(patch: Partial<AppSettings>): Promise<AppSettings> {
-  const res = await apiJson<{ settings: AppSettings }>('api/settings', {
+export async function patchSettings(patch: Partial<AppSettings>): Promise<{
+  settings: AppSettings
+  restartRequired?: boolean
+  basePathForcedByEnv: boolean
+}> {
+  return apiJson('api/settings', {
     method: 'PATCH',
     body: JSON.stringify(patch),
   })
-  return res.settings
 }
 
 export async function probeJd(url?: string): Promise<

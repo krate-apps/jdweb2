@@ -30,7 +30,7 @@ const busy = ref(false)
 
 async function loadDefaults() {
   try {
-    const s = await settingsApi.getSettings()
+    const { settings: s } = await settingsApi.getSettings()
     jdApiUrl.value = s.jdApiUrl
     stagingDir.value = s.stagingDir
     moviesDir.value = s.moviesDir

@@ -45,7 +45,7 @@ docker compose up -d
 # pulls ghcr.io/krate-apps/jdweb:0.1.0
 ```
 
-Path prefix or local rebuild: `JDWEB_BASE_PATH=/alice/jdweb docker compose up -d --build`. See **[docs/Reverse-proxy.md](docs/Reverse-proxy.md)** and **[docs/Release.md](docs/Release.md)**.
+Path prefix (no rebuild): `JDWEB_BASE_PATH=/alice/jdweb docker compose up -d`. See **[docs/Reverse-proxy.md](docs/Reverse-proxy.md)** and **[docs/Release.md](docs/Release.md)**.
 
 ## Features
 

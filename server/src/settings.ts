@@ -1,10 +1,11 @@
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { getDb } from './db.js'
-import { projectRoot } from './config.js'
+import { normalizeBasePath, projectRoot } from './config.js'
 import { assertSafeJdApiUrl } from './security.js'
 
 export interface AppSettings {
+  basePath: string
   jdApiUrl: string
   stagingDir: string
   moviesDir: string
@@ -16,6 +17,7 @@ export interface AppSettings {
 export type AppSettingsPatch = Partial<AppSettings>
 
 const KEYS = [
+  'basePath',
   'jdApiUrl',
   'stagingDir',
   'moviesDir',
@@ -51,10 +53,18 @@ function resolveSettingPath(raw: string, fallbackAbsolute: string): string {
   return resolve(projectRoot, value)
 }
 
+export function assertSafeBasePath(raw: string): string {
+  const normalized = normalizeBasePath(raw)
+  if (normalized.includes('..') || normalized.includes('//')) throw new Error('invalid_base_path')
+  if (/[^a-zA-Z0-9/_-]/.test(normalized)) throw new Error('invalid_base_path')
+  return normalized
+}
+
 /** Defaults from env (legacy installs) or ~/medias/jdownloader like other downloaders. */
 export function defaultsFromEnv(): AppSettings {
   const media = defaultMediaRoot()
   return {
+    basePath: assertSafeBasePath(env('JDWEB_BASE_PATH', '')),
     jdApiUrl: env('JD_API_URL', 'http://127.0.0.1:3128').replace(/\/+$/, ''),
     stagingDir: resolveSettingPath(env('JDWEB_STAGING_DIR'), join(media, 'staging')),
     moviesDir: resolveSettingPath(env('JDWEB_MOVIES_DIR'), join(media, 'library', 'movies')),
@@ -95,6 +105,12 @@ function parseStored(defaults: AppSettings): AppSettings {
       if (Number.isFinite(n) && n >= 0) out.moverIntervalMs = n
     } else if (key === 'jdApiUrl') {
       out.jdApiUrl = raw.replace(/\/+$/, '')
+    } else if (key === 'basePath') {
+      try {
+        out.basePath = assertSafeBasePath(raw)
+      } catch {
+        out.basePath = defaults.basePath
+      }
     } else {
       out[key] = resolve(raw)
     }
@@ -111,14 +127,35 @@ export function initAppSettings(): AppSettings {
       writeRow(key, serialize(key, defaults))
     }
     current = { ...defaults }
-    return current
+    return syncBasePathFromEnv()
   }
   current = parseStored(defaults)
   // Ensure every key exists (partial upgrades)
   for (const key of KEYS) {
     if (readRow(key) == null) writeRow(key, serialize(key, current))
   }
-  return current
+  return syncBasePathFromEnv()
+}
+
+/**
+ * When JDWEB_BASE_PATH is set (Compose / process env), keep SQLite in sync so
+ * a restart picks up the compose value without a UI edit.
+ */
+export function syncBasePathFromEnv(): AppSettings {
+  const fromEnv = assertSafeBasePath(env('JDWEB_BASE_PATH', ''))
+  if (!fromEnv) return getAppSettings()
+  if (getAppSettings().basePath === fromEnv) return getAppSettings()
+  return updateAppSettings({ basePath: fromEnv })
+}
+
+/** Public URL path prefix (no trailing slash), from settings. */
+export function getBasePath(): string {
+  return getAppSettings().basePath
+}
+
+/** True when compose/process env currently forces the base path. */
+export function basePathForcedByEnv(): boolean {
+  return Boolean(assertSafeBasePath(env('JDWEB_BASE_PATH', '')))
 }
 
 export function getAppSettings(): AppSettings {
@@ -134,6 +171,9 @@ export function resolvePathInput(raw: string): string {
 
 export function updateAppSettings(patch: AppSettingsPatch): AppSettings {
   const next: AppSettings = { ...getAppSettings() }
+  if (patch.basePath !== undefined) {
+    next.basePath = assertSafeBasePath(patch.basePath)
+  }
   if (patch.jdApiUrl !== undefined) {
     next.jdApiUrl = assertSafeJdApiUrl(patch.jdApiUrl)
   }

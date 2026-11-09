@@ -4,10 +4,10 @@ Put a reverse proxy in front of jdweb to terminate TLS and/or mount the app unde
 
 ## Rules that always apply
 
-1. **Same path on proxy and app.** If users open `https://example.com/alice/jdweb/`, set `JDWEB_BASE_PATH=/alice/jdweb` and proxy that exact prefix to the Node process **without stripping it**. jdweb expects the full public path (for example `/alice/jdweb/api/...` and `/alice/jdweb/assets/...`).
-2. **Rebuild after changing the base path.** Run `pnpm build` (or at least `pnpm --filter ./web build`) so Vite emits asset URLs under the prefix. A build with an empty base produces `/assets/...` at the host root; the proxy will not forward those requests and browsers report an empty MIME type with `X-Content-Type-Options: nosniff`.
+1. **Same path on proxy and app.** If users open `https://example.com/alice/jdweb/`, set `JDWEB_BASE_PATH=/alice/jdweb` (Compose) or Settings `basePath`, then **restart**. Proxy that exact prefix to Node **without stripping it**.
+2. **No UI rebuild for path prefixes.** The server injects the prefix into HTML at runtime. A mismatch still yields `/assets/...` at the host root and empty MIME / `nosniff` errors.
 3. **Keep jdweb on localhost when proxied.** Prefer `JDWEB_HOST=127.0.0.1` and do not expose port `8787` publicly.
-4. **Forward `Host`.** Cookie path is `JDWEB_BASE_PATH` (or `/` when empty).
+4. **Forward `Host`.** Cookie path follows the configured base path (or `/` when empty).
 5. **Do not strip the prefix** with `handle_path`, `uri strip_prefix`, `proxy_pass .../` tricks that drop `/alice/jdweb`, or Apache `ProxyPass` that maps to `http://127.0.0.1:8787/` without the prefix.
 
 ### Quick matrix
@@ -48,7 +48,7 @@ JDWEB_PORT=8787
 JDWEB_BASE_PATH=/alice/jdweb
 ```
 
-Then `pnpm build && pnpm start`.
+Then restart jdweb (`pnpm start` or `docker compose up -d`).
 
 ### Subdomain at site root
 
@@ -62,7 +62,7 @@ jdweb.example.com {
 }
 ```
 
-Leave `JDWEB_BASE_PATH` empty and rebuild.
+Leave `JDWEB_BASE_PATH` / Settings `basePath` empty and restart.
 
 ### What not to do (Caddy)
 
@@ -105,7 +105,7 @@ server {
 }
 ```
 
-`JDWEB_BASE_PATH=/alice/jdweb`, then rebuild and start jdweb.
+`JDWEB_BASE_PATH=/alice/jdweb`, then restart jdweb.
 
 ### Subdomain at site root
 
@@ -164,7 +164,7 @@ Enable modules: `proxy`, `proxy_http`, `headers`, and usually `ssl`.
 </VirtualHost>
 ```
 
-`JDWEB_BASE_PATH=/alice/jdweb`, then rebuild and start.
+`JDWEB_BASE_PATH=/alice/jdweb`, then restart.
 
 ### Subdomain at site root
 
@@ -192,9 +192,9 @@ ProxyPass /alice/jdweb/ http://127.0.0.1:8787/
 
 ## Checklist after enabling a proxy
 
-1. `JDWEB_BASE_PATH` matches the public path (or is empty for a root subdomain).
-2. `pnpm build` completed **after** that value was set (Vite reads it at build time; Docker: `docker compose build --build-arg JDWEB_BASE_PATH=/alice/jdweb`).
-3. Open the app URL and view source: script/link tags must look like `/alice/jdweb/assets/index-….js`, not `/assets/…`.
+1. `JDWEB_BASE_PATH` / Settings `basePath` matches the public path (or is empty for a root subdomain). Restart after changing.
+2. No UI rebuild is required for path prefixes (runtime injection).
+3. Open the app URL and view source: `jdweb-base-path` meta and script/link tags under `/alice/jdweb/assets/…`.
 4. `GET https://…/alice/jdweb/api/health` returns JSON.
 5. Login sets a cookie whose path is `/alice/jdweb` (or `/`).
 

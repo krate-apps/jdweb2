@@ -10,7 +10,7 @@ Copy `.env.example` to `.env`. Only these are required for a normal install:
 |----------|---------|
 | `JDWEB_HOST` | Bind address (`127.0.0.1` behind a proxy; `0.0.0.0` if exposing Node) |
 | `JDWEB_PORT` | Listen port (default `8787`) |
-| `JDWEB_BASE_PATH` | Public URL prefix without trailing slash; rebuild UI after change |
+| `JDWEB_BASE_PATH` | Optional public URL prefix (e.g. `/alice/jdweb`). Synced into Settings on boot when set; no UI rebuild |
 | `JDWEB_DB_PATH` | SQLite file (default `./data/jdweb.sqlite`) |
 | `JDWEB_SESSION_SECRET` | Cookie HMAC secret — or auto-written to `data/secrets.env` |
 | `JDWEB_DATA_KEY` | 64 hex chars AES key — or auto-written to `data/secrets.env` |
@@ -32,6 +32,7 @@ Stored in `app_settings` and edited under **Settings → JDownloader and library
 
 | Setting | Default seed |
 |---------|----------------|
+| `basePath` | `JDWEB_BASE_PATH` or empty (site root). Editable in Settings unless env is set |
 | `jdApiUrl` | `JD_API_URL` or `http://127.0.0.1:3128` |
 | `stagingDir` | `JDWEB_STAGING_DIR` or `~/medias/jdownloader/staging` |
 | `moviesDir` / `showsDir` / `otherDir` | matching env or `~/medias/jdownloader/library/…` |
@@ -55,12 +56,12 @@ API: `GET/PATCH /api/settings` (authenticated).
 
 ## Base path
 
-| Public URL | `JDWEB_BASE_PATH` |
-|------------|-------------------|
+| Public URL | `basePath` / `JDWEB_BASE_PATH` |
+|------------|-------------------------------|
 | `https://example.com/alice/jdweb` | `/alice/jdweb` |
 | `https://jdweb.example.com/` | *(empty)* |
 
-Rebuild after changing: `pnpm build`. See [Reverse proxy](Reverse-proxy).
+Set via **Compose** (`JDWEB_BASE_PATH` in `environment` / `.env`), or **Settings → Connection** (then restart). The published image needs no rebuild — the server injects the prefix at runtime. See [Reverse proxy](Reverse-proxy).
 
 ## Data key rotation
 
@@ -72,5 +73,5 @@ Rebuild after changing: `pnpm build`. See [Reverse proxy](Reverse-proxy).
 
 - [ ] Secrets not the development default (`JDWEB_STRICT_SECRETS=1` or `NODE_ENV=production`)
 - [ ] `JDWEB_HOST=127.0.0.1` behind TLS proxy
-- [ ] `JDWEB_BASE_PATH` matches proxy; UI rebuilt
+- [ ] `basePath` / `JDWEB_BASE_PATH` matches proxy; jdweb restarted after change
 - [ ] Backup `JDWEB_DB_PATH` and `data/secrets.env`

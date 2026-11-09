@@ -22,7 +22,13 @@ import { describeDestination, stagingPathFor, type DestinationKind } from './des
 import { movePackageNow, restartMover, runMoverNow, startMover } from './mover.js'
 import { listMoveEvents } from './move-history.js'
 import { initDb } from './db.js'
-import { getAppSettings, initAppSettings, updateAppSettings } from './settings.js'
+import {
+  basePathForcedByEnv,
+  getAppSettings,
+  getBasePath,
+  initAppSettings,
+  updateAppSettings,
+} from './settings.js'
 import { assertSafeJdApiUrl } from './security.js'
 import { rateLimitAllow } from './rate-limit.js'
 import { recordAudit } from './audit.js'
@@ -67,12 +73,6 @@ import { metricsText, noteAuthLogin, snapshotMetrics } from './metrics.js'
 type Vars = { username: string; sessionId: string; userId: number }
 
 const app = new Hono<{ Variables: Vars }>()
-const base = config.basePath
-
-function mount(path: string): string {
-  if (!base) return path
-  return path === '/' ? base : `${base}${path}`
-}
 
 function clientIp(c: Parameters<typeof getConnInfo>[0]): string {
   const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
@@ -122,6 +122,7 @@ function errorStatus(message: string): ContentfulStatusCode {
     case 'invalid_jd_api_url':
     case 'jd_api_url_not_private':
     case 'invalid_mover_interval':
+    case 'invalid_base_path':
     case 'path_required':
       return 400
     case 'setup_localhost_only':
@@ -144,7 +145,7 @@ app.use('*', async (c, next) => {
   await next()
 })
 
-app.get(mount('/api/health'), async (c) => {
+app.get('/api/health', async (c) => {
   const settings = getAppSettings()
   const jd = await probeJdApi(settings.jdApiUrl)
   let uiBuilt = false
@@ -156,7 +157,7 @@ app.get(mount('/api/health'), async (c) => {
   }
   return c.json({
     ok: true,
-    basePath: base || '/',
+    basePath: settings.basePath || '/',
     mover: settings.moverIntervalMs > 0,
     needsSetup: countUsers() === 0,
     jdReachable: jd.ok,
@@ -166,9 +167,9 @@ app.get(mount('/api/health'), async (c) => {
   })
 })
 
-app.get(mount('/api/setup/status'), (c) => c.json({ needsSetup: countUsers() === 0 }))
+app.get('/api/setup/status', (c) => c.json({ needsSetup: countUsers() === 0 }))
 
-app.post(mount('/api/setup/admin'), async (c) => {
+app.post('/api/setup/admin', async (c) => {
   if (countUsers() > 0) return c.json({ error: 'setup_already_done' }, 403)
   if (!isLoopback(c)) return c.json({ error: 'setup_localhost_only' }, 403)
   const ip = clientIp(c) || 'loopback'
@@ -187,7 +188,7 @@ app.post(mount('/api/setup/admin'), async (c) => {
 
 const JD_PROBE_PORTS = [3128, 49247, 3129, 8080]
 
-app.post(mount('/api/setup/probe-jd'), async (c) => {
+app.post('/api/setup/probe-jd', async (c) => {
   const session = readSession(c)
   if (countUsers() === 0 && !isLoopback(c)) return c.json({ error: 'setup_localhost_only' }, 403)
   if (countUsers() > 0 && !session) return c.json({ error: 'unauthorized' }, 401)
@@ -210,7 +211,7 @@ app.post(mount('/api/setup/probe-jd'), async (c) => {
   return c.json({ candidates: found })
 })
 
-app.post(mount('/api/auth/login'), async (c) => {
+app.post('/api/auth/login', async (c) => {
   if (countUsers() === 0) return c.json({ error: 'needs_setup' }, 503)
   const ip = clientIp(c) || 'unknown'
   if (!rateLimitAllow(`login:${ip}`, 20, 60_000)) {
@@ -232,18 +233,18 @@ app.post(mount('/api/auth/login'), async (c) => {
   return c.json({ username: user.username })
 })
 
-app.post(mount('/api/auth/logout'), (c) => {
+app.post('/api/auth/logout', (c) => {
   clearSession(c)
   return c.json({ ok: true })
 })
 
-app.get(mount('/api/auth/me'), (c) => {
+app.get('/api/auth/me', (c) => {
   const session = readSession(c)
   if (!session) return c.json({ error: 'unauthorized' }, 401)
   return c.json({ username: session.username })
 })
 
-app.get(mount('/api/sessions'), requireAuth, (c) => {
+app.get('/api/sessions', requireAuth, (c) => {
   const currentId = c.get('sessionId')
   const sessions = listSessionsForUser(c.get('userId')).map((s) => ({
     id: s.id,
@@ -256,21 +257,21 @@ app.get(mount('/api/sessions'), requireAuth, (c) => {
   return c.json({ sessions })
 })
 
-app.delete(mount('/api/sessions/:id'), requireAuth, (c) => {
+app.delete('/api/sessions/:id', requireAuth, (c) => {
   const id = c.req.param('id') ?? ''
   if (!id || !revokeSession(id, c.get('userId'))) return c.json({ error: 'session_not_found' }, 404)
   if (id === c.get('sessionId')) clearSession(c)
   return c.json({ ok: true })
 })
 
-app.delete(mount('/api/sessions'), requireAuth, (c) => {
+app.delete('/api/sessions', requireAuth, (c) => {
   const removed = revokeOtherSessions(c.get('userId'), c.get('sessionId'))
   return c.json({ ok: true, removed })
 })
 
-app.get(mount('/api/users'), requireAuth, (c) => c.json({ users: listUsers() }))
+app.get('/api/users', requireAuth, (c) => c.json({ users: listUsers() }))
 
-app.post(mount('/api/users/me/password'), requireAuth, async (c) => {
+app.post('/api/users/me/password', requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
     currentPassword?: string
     newPassword?: string
@@ -288,7 +289,7 @@ app.post(mount('/api/users/me/password'), requireAuth, async (c) => {
   }
 })
 
-app.post(mount('/api/users'), requireAuth, async (c) => {
+app.post('/api/users', requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as { username?: string; password?: string } | null
   try {
     const user = await createUser(body?.username ?? '', body?.password ?? '')
@@ -299,7 +300,7 @@ app.post(mount('/api/users'), requireAuth, async (c) => {
   }
 })
 
-app.patch(mount('/api/users/:id'), requireAuth, async (c) => {
+app.patch('/api/users/:id', requireAuth, async (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id)) return c.json({ error: 'invalid_body' }, 400)
   const body = (await c.req.json().catch(() => null)) as { password?: string } | null
@@ -312,7 +313,7 @@ app.patch(mount('/api/users/:id'), requireAuth, async (c) => {
   }
 })
 
-app.delete(mount('/api/users/:id'), requireAuth, (c) => {
+app.delete('/api/users/:id', requireAuth, (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id)) return c.json({ error: 'invalid_body' }, 400)
   try {
@@ -324,7 +325,7 @@ app.delete(mount('/api/users/:id'), requireAuth, (c) => {
   }
 })
 
-app.get(mount('/api/hosters'), requireAuth, async (c) => {
+app.get('/api/hosters', requireAuth, async (c) => {
   try {
     return c.json({ hosters: await listHosters() })
   } catch (err) {
@@ -332,7 +333,7 @@ app.get(mount('/api/hosters'), requireAuth, async (c) => {
   }
 })
 
-app.post(mount('/api/hosters'), requireAuth, async (c) => {
+app.post('/api/hosters', requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
     hoster?: string
     username?: string
@@ -353,7 +354,7 @@ app.post(mount('/api/hosters'), requireAuth, async (c) => {
   }
 })
 
-app.patch(mount('/api/hosters/:id'), requireAuth, async (c) => {
+app.patch('/api/hosters/:id', requireAuth, async (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id)) return c.json({ error: 'invalid_body' }, 400)
   const body = (await c.req.json().catch(() => null)) as {
@@ -376,7 +377,7 @@ app.patch(mount('/api/hosters/:id'), requireAuth, async (c) => {
   }
 })
 
-app.delete(mount('/api/hosters/:id'), requireAuth, async (c) => {
+app.delete('/api/hosters/:id', requireAuth, async (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id)) return c.json({ error: 'invalid_body' }, 400)
   try {
@@ -388,7 +389,7 @@ app.delete(mount('/api/hosters/:id'), requireAuth, async (c) => {
   }
 })
 
-app.post(mount('/api/hosters/refresh'), requireAuth, async (c) => {
+app.post('/api/hosters/refresh', requireAuth, async (c) => {
   try {
     return c.json({ hosters: await refreshHosters() })
   } catch (err) {
@@ -396,7 +397,7 @@ app.post(mount('/api/hosters/refresh'), requireAuth, async (c) => {
   }
 })
 
-app.post(mount('/api/hosters/import'), requireAuth, async (c) => {
+app.post('/api/hosters/import', requireAuth, async (c) => {
   try {
     return c.json(await importHostersFromJd())
   } catch (err) {
@@ -404,7 +405,7 @@ app.post(mount('/api/hosters/import'), requireAuth, async (c) => {
   }
 })
 
-app.post(mount('/api/hosters/:id/resync'), requireAuth, async (c) => {
+app.post('/api/hosters/:id/resync', requireAuth, async (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id)) return c.json({ error: 'invalid_body' }, 400)
   try {
@@ -415,9 +416,11 @@ app.post(mount('/api/hosters/:id/resync'), requireAuth, async (c) => {
   }
 })
 
-app.get(mount('/api/config/public'), requireAuth, (c) => {
+app.get('/api/config/public', requireAuth, (c) => {
   const s = getAppSettings()
   return c.json({
+    basePath: s.basePath || '/',
+    basePathForcedByEnv: basePathForcedByEnv(),
     stagingDir: s.stagingDir,
     moviesDir: s.moviesDir,
     showsDir: s.showsDir,
@@ -428,10 +431,13 @@ app.get(mount('/api/config/public'), requireAuth, (c) => {
   })
 })
 
-app.get(mount('/api/settings'), requireAuth, (c) => c.json({ settings: getAppSettings() }))
+app.get('/api/settings', requireAuth, (c) =>
+  c.json({ settings: getAppSettings(), basePathForcedByEnv: basePathForcedByEnv() }),
+)
 
-app.patch(mount('/api/settings'), requireAuth, async (c) => {
+app.patch('/api/settings', requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
+    basePath?: string
     jdApiUrl?: string
     stagingDir?: string
     moviesDir?: string
@@ -440,12 +446,14 @@ app.patch(mount('/api/settings'), requireAuth, async (c) => {
     moverIntervalMs?: number
   } | null
   if (!body) return c.json({ error: 'invalid_body' }, 400)
+  if (body.basePath !== undefined && basePathForcedByEnv()) {
+    return c.json({ error: 'base_path_forced_by_env' }, 409)
+  }
   try {
-    const prevInterval = getAppSettings().moverIntervalMs
+    const prev = getAppSettings()
     const settings = updateAppSettings(body)
-    if (settings.moverIntervalMs !== prevInterval) restartMover()
+    if (settings.moverIntervalMs !== prev.moverIntervalMs) restartMover()
     recordAudit('settings.update', JSON.stringify(body), c.get('username'))
-    // Ensure library dirs exist after path changes
     for (const dir of [
       settings.stagingDir,
       join(settings.stagingDir, 'movies'),
@@ -457,14 +465,15 @@ app.patch(mount('/api/settings'), requireAuth, async (c) => {
     ]) {
       await mkdir(dir, { recursive: true })
     }
-    return c.json({ settings })
+    const restartRequired = body.basePath !== undefined && settings.basePath !== prev.basePath
+    return c.json({ settings, restartRequired, basePathForcedByEnv: basePathForcedByEnv() })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'update_failed'
     return c.json({ error: message }, errorStatus(message))
   }
 })
 
-app.get(mount('/api/library/:root'), requireAuth, async (c) => {
+app.get('/api/library/:root', requireAuth, async (c) => {
   const rootParam = c.req.param('root') ?? ''
   if (!isLibraryRoot(rootParam)) return c.json({ error: 'invalid_root' }, 400)
   const path = c.req.query('path') ?? ''
@@ -477,7 +486,7 @@ app.get(mount('/api/library/:root'), requireAuth, async (c) => {
   }
 })
 
-app.post(mount('/api/destinations/resolve'), requireAuth, async (c) => {
+app.post('/api/destinations/resolve', requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
     kind?: DestinationKind
     title?: string
@@ -497,7 +506,7 @@ app.post(mount('/api/destinations/resolve'), requireAuth, async (c) => {
   })
 })
 
-app.post(mount('/api/mover/move'), requireAuth, async (c) => {
+app.post('/api/mover/move', requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
     packageUuid?: number
     kind?: DestinationKind
@@ -520,7 +529,7 @@ app.post(mount('/api/mover/move'), requireAuth, async (c) => {
   }
 })
 
-app.post(mount('/api/mover/run'), requireAuth, async (c) => {
+app.post('/api/mover/run', requireAuth, async (c) => {
   try {
     const result = await runMoverNow()
     return c.json({ ok: true, ...result })
@@ -531,15 +540,15 @@ app.post(mount('/api/mover/run'), requireAuth, async (c) => {
   }
 })
 
-app.get(mount('/api/mover/history'), requireAuth, (c) => {
+app.get('/api/mover/history', requireAuth, (c) => {
   const raw = Number(c.req.query('limit') ?? 50)
   const limit = Number.isFinite(raw) ? raw : 50
   return c.json({ events: listMoveEvents(limit) })
 })
 
-app.get(mount('/api/webhooks'), requireAuth, (c) => c.json({ webhooks: listWebhooks() }))
+app.get('/api/webhooks', requireAuth, (c) => c.json({ webhooks: listWebhooks() }))
 
-app.post(mount('/api/webhooks'), requireAuth, async (c) => {
+app.post('/api/webhooks', requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
     url?: string
     events?: string[]
@@ -558,7 +567,7 @@ app.post(mount('/api/webhooks'), requireAuth, async (c) => {
   }
 })
 
-app.patch(mount('/api/webhooks/:id'), requireAuth, async (c) => {
+app.patch('/api/webhooks/:id', requireAuth, async (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isFinite(id)) return c.json({ error: 'invalid_id' }, 400)
   const body = (await c.req.json().catch(() => null)) as {
@@ -584,14 +593,14 @@ app.patch(mount('/api/webhooks/:id'), requireAuth, async (c) => {
   }
 })
 
-app.delete(mount('/api/webhooks/:id'), requireAuth, (c) => {
+app.delete('/api/webhooks/:id', requireAuth, (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isFinite(id)) return c.json({ error: 'invalid_id' }, 400)
   if (!deleteWebhook(id)) return c.json({ error: 'not_found' }, 404)
   return c.json({ ok: true })
 })
 
-app.get(mount('/api/metrics'), requireAuth, (c) => {
+app.get('/api/metrics', requireAuth, (c) => {
   const extra = {
     users: countUsers(),
     hosters: countHosters(),
@@ -605,7 +614,7 @@ app.get(mount('/api/metrics'), requireAuth, (c) => {
   return c.json(snapshotMetrics(extra))
 })
 
-app.post(mount('/api/webhooks/notify'), requireAuth, async (c) => {
+app.post('/api/webhooks/notify', requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
     event?: string
     package?: { uuid?: number; name?: string; saveTo?: string }
@@ -628,10 +637,11 @@ app.post(mount('/api/webhooks/notify'), requireAuth, async (c) => {
   return c.json({ ok: true })
 })
 
-app.all(mount('/api/jd/*'), requireAuth, async (c) => {
-  const prefix = mount('/api/jd')
-  const url = new URL(c.req.url)
-  let jdPath = url.pathname.slice(prefix.length)
+app.all('/api/jd/*', requireAuth, async (c) => {
+  const pathname = new URL(c.req.url).pathname
+  const marker = '/api/jd'
+  const at = pathname.indexOf(marker)
+  let jdPath = at >= 0 ? pathname.slice(at + marker.length) : '/'
   if (!jdPath.startsWith('/')) jdPath = `/${jdPath}`
   const raw = await c.req.text()
   const upstream = await proxyJdRequest(jdPath, raw)
@@ -674,16 +684,25 @@ function htmlHasBasePath(html: string, basePath: string): boolean {
 }
 
 /**
- * Prefix root-absolute asset URLs when the UI was built without JDWEB_BASE_PATH.
- * Note: the JS bundle still needs a rebuild for import.meta.env.BASE_URL / chunk URLs.
+ * Inject runtime base path (meta, CSP-safe) and rewrite root-absolute asset
+ * URLs so a single root-built `web/dist` works behind any public prefix.
  */
 function rewriteSpaHtml(html: string, basePath: string): string {
-  if (!basePath || htmlHasBasePath(html, basePath)) return html
-  return html.replaceAll('src="/', `src="${basePath}/`).replaceAll('href="/', `href="${basePath}/`)
+  const meta = `<meta name="jdweb-base-path" content="${basePath.replace(/"/g, '')}">`
+  let out = /name=["']jdweb-base-path["']/.test(html)
+    ? html.replace(
+        /<meta\s+name=["']jdweb-base-path["']\s+content=["'][^"']*["']\s*\/?>/i,
+        meta,
+      )
+    : html.replace(/<head([^>]*)>/i, `<head$1>${meta}`)
+  if (basePath && !htmlHasBasePath(out, basePath)) {
+    out = out.replaceAll('src="/', `src="${basePath}/`).replaceAll('href="/', `href="${basePath}/`)
+  }
+  return out
 }
 
-async function loadSpaHtml(): Promise<string> {
-  return rewriteSpaHtml(await readFile(join(config.webDist, 'index.html'), 'utf8'), base)
+async function loadSpaHtml(basePath: string): Promise<string> {
+  return rewriteSpaHtml(await readFile(join(config.webDist, 'index.html'), 'utf8'), basePath)
 }
 
 /** Resolve a file under web/dist (absolute root, cwd-independent). */
@@ -710,27 +729,22 @@ async function main() {
   }
   startMover()
 
+  const base = getBasePath()
   const staticRoot = config.webDist
   const uiBuilt = await hasWebDist()
 
   if (uiBuilt) {
-    const rawHtml = await readFile(join(staticRoot, 'index.html'), 'utf8')
-    if (base && !htmlHasBasePath(rawHtml, base)) {
-      log('error', 'web dist built without JDWEB_BASE_PATH; rebuild required', {
-        JDWEB_BASE_PATH: base,
-        webDist: staticRoot,
-        hint: 'From repo root: pnpm build && pnpm start',
-      })
-    } else {
-      log('info', 'serving UI', { webDist: staticRoot, base: base || '/' })
-    }
+    log('info', 'serving UI', {
+      webDist: staticRoot,
+      base: base || '/',
+      basePathForcedByEnv: basePathForcedByEnv(),
+    })
 
     const spaOrAsset = async (c: Context<{ Variables: Vars }>) => {
       const path = c.req.path
       const stripped = base && path.startsWith(base) ? path.slice(base.length) || '/' : path
       const rel = stripped.replace(/^\/+/, '')
 
-      // Never SPA-fallback assets — wrong MIME (text/html) breaks modules/CSS.
       if (rel && rel !== 'index.html' && STATIC_ASSET_EXT.test(rel)) {
         const file = resolveWebAsset(rel)
         if (!file) {
@@ -750,15 +764,18 @@ async function main() {
         }
       }
 
-      return c.html(await loadSpaHtml())
+      return c.html(await loadSpaHtml(base))
     }
 
-    app.get(mount('/'), (c) => spaOrAsset(c))
-    // Exact prefix with trailing slash (Caddy redirects here)
-    if (base) {
-      app.get(`${base}/`, (c) => spaOrAsset(c))
-    }
-    app.get(`${base || ''}/*`, (c) => spaOrAsset(c))
+    app.get('/', (c) => spaOrAsset(c))
+    app.get('/*', (c) => spaOrAsset(c))
+  }
+
+  const root = new Hono<{ Variables: Vars }>()
+  if (base) {
+    root.route(base, app)
+  } else {
+    root.route('/', app)
   }
 
   log('info', 'jdweb starting', {
@@ -774,7 +791,7 @@ async function main() {
     log('info', 'web dist missing; use Vite at http://127.0.0.1:5173 during development')
   }
 
-  const server = serve({ fetch: app.fetch, hostname: config.host, port: config.port })
+  const server = serve({ fetch: root.fetch, hostname: config.host, port: config.port })
   server.on('error', (err: NodeJS.ErrnoException) => {
     log('error', 'listen failed', {
       error: err.message,

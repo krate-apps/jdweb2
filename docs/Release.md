@@ -20,7 +20,7 @@ Current published image: `ghcr.io/krate-apps/jdweb:0.1.0` (<!-- jdweb-version --
 2. Updates `CHANGELOG.md`
 3. Updates the GHCR tag in `docker-compose.yml` and docs
 4. Creates git tag `vX.Y.Z` and a GitHub Release
-5. Builds and pushes `ghcr.io/krate-apps/jdweb:X.Y.Z` and `:latest` (empty `JDWEB_BASE_PATH`)
+5. Builds and pushes `ghcr.io/krate-apps/jdweb:X.Y.Z` and `:latest`
 
 ## Baseline
 
@@ -28,10 +28,10 @@ The first tag in history is **`v0.1.0`**. Without it, semantic-release would sta
 
 ## Path prefix
 
-The GHCR image is built for `/`. For a public prefix, rebuild locally:
+The image is base-path agnostic. Set the prefix at runtime:
 
 ```bash
-JDWEB_BASE_PATH=/alice/jdweb docker compose up -d --build
+JDWEB_BASE_PATH=/alice/jdweb docker compose up -d
 ```
 
 ## Manual dry-run

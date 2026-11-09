@@ -2,6 +2,15 @@ import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto'
 import type { Context, Next } from 'hono'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { config } from './config.js'
+import { getBasePath } from './settings.js'
+
+function cookiePath(): string {
+  try {
+    return getBasePath() || '/'
+  } catch {
+    return config.basePath || '/'
+  }
+}
 import { getDb } from './db.js'
 import { findUserByUsername } from './users.js'
 
@@ -60,7 +69,7 @@ export function issueSession(
   setCookie(c, COOKIE, encodeCookie(id), {
     httpOnly: true,
     sameSite: 'Lax',
-    path: config.basePath || '/',
+    path: cookiePath(),
     maxAge: MAX_AGE_SEC,
     secure,
   })
@@ -81,7 +90,7 @@ export function clearSession(c: Context): void {
     const id = decodeCookie(token)
     if (id) getDb().prepare('DELETE FROM sessions WHERE id = ?').run(id)
   }
-  deleteCookie(c, COOKIE, { path: config.basePath || '/' })
+  deleteCookie(c, COOKIE, { path: cookiePath() })
 }
 
 function loadSession(id: string): SessionInfo | null {

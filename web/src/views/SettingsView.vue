@@ -39,7 +39,9 @@ const sessions = ref<AppSession[]>([])
 const sessionError = ref<string | null>(null)
 const moverBusy = ref(false)
 const appSettings = ref<AppSettings | null>(null)
+const basePathForcedByEnv = ref(false)
 const settingsForm = ref({
+  basePath: '',
   jdApiUrl: '',
   stagingDir: '',
   moviesDir: '',
@@ -132,8 +134,10 @@ async function removeWebhook(hook: Webhook) {
 async function loadAppSettings() {
   settingsError.value = null
   try {
-    appSettings.value = await settingsApi.getSettings()
-    settingsForm.value = { ...appSettings.value }
+    const res = await settingsApi.getSettings()
+    appSettings.value = res.settings
+    basePathForcedByEnv.value = res.basePathForcedByEnv
+    settingsForm.value = { ...res.settings }
   } catch (err) {
     settingsError.value = err instanceof ApiError ? err.message : t('common.error')
   }
@@ -144,12 +148,18 @@ async function saveAppSettings() {
   settingsMsg.value = null
   settingsError.value = null
   try {
-    appSettings.value = await settingsApi.patchSettings({ ...settingsForm.value })
-    settingsForm.value = { ...appSettings.value }
-    settingsMsg.value = t('settings.saved')
+    const res = await settingsApi.patchSettings({ ...settingsForm.value })
+    appSettings.value = res.settings
+    basePathForcedByEnv.value = res.basePathForcedByEnv
+    settingsForm.value = { ...res.settings }
+    settingsMsg.value = res.restartRequired ? t('settings.savedRestart') : t('settings.saved')
     await app.loadPublicConfig()
   } catch (err) {
-    settingsError.value = err instanceof ApiError ? err.message : t('common.error')
+    if (err instanceof ApiError && err.message === 'base_path_forced_by_env') {
+      settingsError.value = t('settings.basePathForced')
+    } else {
+      settingsError.value = err instanceof ApiError ? err.message : t('common.error')
+    }
   } finally {
     settingsBusy.value = false
   }
@@ -401,6 +411,19 @@ async function removePassword(value: string) {
 
             <p v-if="settingsError" class="text-xs text-danger-text">{{ settingsError }}</p>
             <p v-if="settingsMsg" class="text-xs text-accent-text">{{ settingsMsg }}</p>
+
+            <label class="block space-y-1.5">
+              <span class="text-xs font-medium text-muted">{{ t('settings.basePath') }}</span>
+              <input
+                v-model="settingsForm.basePath"
+                class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm font-mono disabled:opacity-60"
+                :placeholder="t('settings.basePathPlaceholder')"
+                :disabled="basePathForcedByEnv"
+              />
+              <span class="block text-xs text-muted">
+                {{ basePathForcedByEnv ? t('settings.basePathForced') : t('settings.basePathHint') }}
+              </span>
+            </label>
 
             <label class="block space-y-1.5">
               <span class="text-xs font-medium text-muted">{{ t('settings.jdApiUrl') }}</span>

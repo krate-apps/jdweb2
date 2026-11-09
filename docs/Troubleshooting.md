@@ -4,21 +4,13 @@
 
 **Symptom:** Firefox/Chrome blocks `…/assets/index-….js` (or `.css`) with an empty or wrong MIME type and `X-Content-Type-Options: nosniff`. The document URL is under a path prefix (for example `/alice/jdweb/`) but the asset URL is `/assets/...` at the **host root**.
 
-**Cause:** The UI was built without the matching `JDWEB_BASE_PATH`, or the reverse proxy only forwards the app prefix. Root `/assets/*` never reaches jdweb.
+**Cause:** The reverse proxy path does not match jdweb’s `basePath`, or only the app prefix is forwarded and root `/assets/*` never reaches jdweb.
 
 **Fix:**
 
-1. Set `JDWEB_BASE_PATH=/trevor/jdweb` (or your public prefix) in `.env` — same path as the proxy.
-2. **Rebuild the UI** (required; rewriting HTML alone is not enough for JS chunk/`BASE_URL`):
-   ```bash
-   pnpm build && pnpm start
-   # Docker:
-   docker compose build --build-arg JDWEB_BASE_PATH=/trevor/jdweb
-   docker compose up -d
-   ```
-   Compose now passes `JDWEB_BASE_PATH` from `.env` as a build arg automatically.
-3. Hard-refresh (Ctrl+Shift+R). View source must show `/trevor/jdweb/assets/...`, not `/assets/...`.
-4. If the server log says `web dist built without JDWEB_BASE_PATH; rebuild required`, the running `web/dist` is still a root build.
+1. Set the same prefix as the proxy: Compose `JDWEB_BASE_PATH=/trevor/jdweb` or Settings → Connection, then **restart** jdweb.
+2. No image/UI rebuild — the server injects the prefix into HTML at runtime.
+3. Hard-refresh (Ctrl+Shift+R). View source must show `meta name="jdweb-base-path"` and `/trevor/jdweb/assets/...`.
 
 See [Reverse proxy](Reverse-proxy).
 
