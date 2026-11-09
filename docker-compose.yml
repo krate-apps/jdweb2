@@ -1,7 +1,7 @@
 services:
   jdweb:
     # Published image works with any JDWEB_BASE_PATH at runtime (no rebuild).
-    image: ghcr.io/krate-apps/jdweb:0.1.0
+    image: ghcr.io/krate-apps/jdweb:1.0.0
     # Optional local build (also no base-path rebuild required):
     build:
       context: .
