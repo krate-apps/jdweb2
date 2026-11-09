@@ -18,7 +18,7 @@ import {
 } from './auth.js'
 import { proxyJdRequest } from './jd.js'
 import { describeDestination, stagingPathFor, type DestinationKind } from './destinations.js'
-import { movePackageNow, startMover } from './mover.js'
+import { movePackageNow, runMoverNow, startMover } from './mover.js'
 import { initDb } from './db.js'
 import {
   countUsers,
@@ -384,6 +384,17 @@ app.post(mount('/api/mover/move'), requireAuth, async (c) => {
     return c.json({ ok: true, directory, label: describeDestination(directory) })
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : 'move_failed' }, 500)
+  }
+})
+
+app.post(mount('/api/mover/run'), requireAuth, async (c) => {
+  try {
+    const result = await runMoverNow()
+    return c.json({ ok: true, ...result })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'mover_failed'
+    const status = message === 'mover_busy' ? 409 : 500
+    return c.json({ error: message }, status)
   }
 })
 

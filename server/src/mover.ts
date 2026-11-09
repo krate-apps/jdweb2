@@ -37,6 +37,8 @@ export function stopMover(): void {
   timer = null
 }
 
+export type MoverRunResult = { moved: number; failed: number }
+
 async function tick(): Promise<void> {
   if (running) return
   running = true
@@ -62,7 +64,20 @@ async function tick(): Promise<void> {
   }
 }
 
-async function processFinishedPackages(): Promise<void> {
+/** Run one mover pass immediately (same logic as the interval tick). */
+export async function runMoverNow(): Promise<MoverRunResult> {
+  if (running) throw new Error('mover_busy')
+  running = true
+  try {
+    const result = await processFinishedPackages()
+    jdReachable = true
+    return result
+  } finally {
+    running = false
+  }
+}
+
+async function processFinishedPackages(): Promise<MoverRunResult> {
   const packages = await jdCall<PackageInfo[]>('/downloadsV2/queryPackages', {
     bytesTotal: true,
     bytesLoaded: true,
@@ -71,6 +86,8 @@ async function processFinishedPackages(): Promise<void> {
     finished: true,
     comment: true,
   })
+  let moved = 0
+  let failed = 0
   for (const pkg of packages ?? []) {
     if (!pkg.finished || !pkg.saveTo) continue
     const target = libraryPathForStaging(pkg.saveTo)
@@ -81,7 +98,9 @@ async function processFinishedPackages(): Promise<void> {
       if (!ready) continue
       await moveTree(pkg.saveTo, target)
       await jdCall('/downloadsV2/removeLinks', [], [pkg.uuid])
+      moved += 1
     } catch (err) {
+      failed += 1
       const message = err instanceof Error ? err.message : String(err)
       try {
         await jdCall('/downloadsV2/setComment', `jdweb-mover: ${message}`, [], [pkg.uuid])
@@ -90,6 +109,7 @@ async function processFinishedPackages(): Promise<void> {
       }
     }
   }
+  return { moved, failed }
 }
 
 async function archivesReady(packageUuid: number): Promise<boolean> {

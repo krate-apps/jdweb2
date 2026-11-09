@@ -9,7 +9,7 @@ import type { AppUser } from '@/api/users'
 import * as sessionsApi from '@/api/sessions'
 import type { AppSession } from '@/api/sessions'
 import { setLocale } from '@/i18n'
-import { ApiError } from '@/api/http'
+import { ApiError, apiJson } from '@/api/http'
 
 const { t, locale } = useI18n()
 const app = useAppStore()
@@ -30,7 +30,24 @@ const myNewPassword = ref('')
 const myPasswordMsg = ref<string | null>(null)
 const sessions = ref<AppSession[]>([])
 const sessionError = ref<string | null>(null)
+const moverBusy = ref(false)
 const error = ref<string | null>(null)
+
+async function runMover() {
+  moverBusy.value = true
+  try {
+    const result = await apiJson<{ ok: boolean; moved: number; failed: number }>('api/mover/run', {
+      method: 'POST',
+      body: '{}',
+    })
+    app.addToast(t('settings.moverResult', { moved: result.moved, failed: result.failed }))
+    await downloads.refresh()
+  } catch (err) {
+    app.addToast(err instanceof ApiError ? err.message : t('common.error'))
+  } finally {
+    moverBusy.value = false
+  }
+}
 
 function formatErr(err: unknown): string {
   const message = err instanceof Error ? err.message : ''
@@ -387,6 +404,14 @@ async function removePassword(value: string) {
       <p class="text-xs text-accent-text">
         {{ app.publicConfig.moverEnabled ? t('settings.moverOn') : t('settings.moverOff') }}
       </p>
+      <button
+        type="button"
+        class="px-3 py-1.5 rounded-[10px] border border-border text-sm disabled:opacity-50"
+        :disabled="moverBusy"
+        @click="runMover"
+      >
+        {{ t('settings.runMover') }}
+      </button>
     </section>
   </div>
 </template>

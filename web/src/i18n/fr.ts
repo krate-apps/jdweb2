@@ -176,6 +176,8 @@ export default {
     other: 'Bibliothèque autre',
     moverOn: 'Le déplacement automatique vers la bibliothèque est activé',
     moverOff: 'Le déplacement automatique vers la bibliothèque est désactivé',
+    runMover: 'Lancer le mover maintenant',
+    moverResult: 'Mover terminé : {moved} déplacé(s), {failed} échec(s)',
     notifications: 'Notifications',
     completionToasts: 'Afficher une notification quand un paquet se termine',
     downloadComplete: 'Téléchargement terminé : {name}',
