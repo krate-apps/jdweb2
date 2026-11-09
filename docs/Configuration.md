@@ -23,6 +23,10 @@ Optional:
 | `JDWEB_USER` / `JDWEB_PASSWORD` | Seed first admin when `users` is empty |
 | `JDWEB_STRICT_SECRETS=1` | Refuse default/derived secrets (also on when `NODE_ENV=production`) |
 | `JDWEB_WEBHOOK_URLS` | Legacy CSV seed if `webhooks` table is empty |
+| `JDWEB_EVENTS_INTERVAL_MS` | Server SSE poll interval (default `2000`) |
+| `JDWEB_OIDC_ISSUER` / `CLIENT_ID` / `CLIENT_SECRET` / `REDIRECT_URI` | Optional OIDC SSO |
+| `JDWEB_OIDC_USERNAME_CLAIM` | Claim mapped to local username (default `preferred_username`) |
+| `JDWEB_OIDC_AUTO_PROVISION` | `true` to create local users on first SSO login (default off) |
 
 On first boot without secrets, jdweb creates **`data/secrets.env`** (mode `600`) with random `JDWEB_SESSION_SECRET` and `JDWEB_DATA_KEY`, then loads it.
 

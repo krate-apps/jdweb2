@@ -72,6 +72,10 @@ Accounts UI and `/api/hosters`: create, enable/disable, password update, delete,
 
 ## Protected routes
 
-Anything under `/api/*` except health, setup status, setup admin / JD probe (localhost), and login requires a valid session. The JDownloader proxy lives at `/api/jd/*`.
+Anything under `/api/*` except health, setup status, setup admin / JD probe (localhost), login, and OIDC start/callback/status requires a valid session. The JDownloader proxy lives at `/api/jd/*`.
+
+## OIDC (optional)
+
+Set `JDWEB_OIDC_ISSUER`, `JDWEB_OIDC_CLIENT_ID`, `JDWEB_OIDC_REDIRECT_URI` (and usually `JDWEB_OIDC_CLIENT_SECRET`). Login shows **Continue with SSO**. By default the IdP username/email must already exist as a local user (`JDWEB_OIDC_AUTO_PROVISION=true` to create accounts on first login).
 
 Login and setup are **rate-limited** per client IP. Failed and successful logins are recorded in `audit_events`.

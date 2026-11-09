@@ -13,6 +13,9 @@ Unless noted, endpoints require a valid `jdweb_session` cookie. JSON request bod
 | `POST` | `/api/setup/admin` | localhost only | Create first admin `{ username, password }` |
 | `POST` | `/api/setup/probe-jd` | localhost (pre-setup) or auth | Probe URL or scan common local ports |
 | `POST` | `/api/auth/login` | no | `{ username, password }` → sets session cookie (rate-limited) |
+| `GET` | `/api/auth/oidc/status` | no | `{ enabled }` when OIDC env is set |
+| `GET` | `/api/auth/oidc/start` | no | Redirect to IdP (PKCE) |
+| `GET` | `/api/auth/oidc/callback` | no | OAuth callback → session cookie |
 | `POST` | `/api/auth/logout` | cookie | Clears session |
 | `GET` | `/api/auth/me` | yes | Current username |
 
@@ -54,6 +57,10 @@ Unless noted, endpoints require a valid `jdweb_session` cookie. JSON request bod
 | `GET` | `/api/settings` | Full app settings (JD URL, paths, mover interval) |
 | `PATCH` | `/api/settings` | Update app settings (JD URL must be private/loopback) |
 | `GET` | `/api/library/:root` | `root` = `movies` \| `shows` \| `other`; `?path=` subfolder |
+| `GET` | `/api/staging` | List staging entries `?path=` |
+| `DELETE` | `/api/staging` | `{ path }` delete under staging |
+| `GET` | `/api/backup` | Download SQLite backup |
+| `POST` | `/api/backup/restore` | multipart `file` → replace DB (restart required) |
 | `POST` | `/api/destinations/resolve` | `{ kind, title, season? }` → staging path + label |
 
 ## Mover
@@ -63,6 +70,12 @@ Unless noted, endpoints require a valid `jdweb_session` cookie. JSON request bod
 | `POST` | `/api/mover/move` | Retarget package staging dir `{ packageUuid, kind, title, season? }` |
 | `POST` | `/api/mover/run` | One-shot mover tick → `{ moved, failed }` |
 | `GET` | `/api/mover/history` | Recent `move_events` (`?limit=`) |
+
+## Live updates
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/events` | SSE stream (`downloads`, `grabber`, `dialogs`, `jd.status`, `heartbeat`). Server polls JD once for all clients (`JDWEB_EVENTS_INTERVAL_MS`, default 2000). |
 
 ## Webhooks and metrics
 

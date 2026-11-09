@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { LogIn, Moon, Sun } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { setLocale } from '@/i18n'
-import { ApiError } from '@/api/http'
+import { ApiError, apiJson } from '@/api/http'
+import { apiUrl } from '@/lib/base'
 import BrandMark from '@/components/ui/BrandMark.vue'
 
 const { t, locale } = useI18n()
@@ -19,6 +20,19 @@ const username = ref('')
 const password = ref('')
 const error = ref<string | null>(null)
 const busy = ref(false)
+const oidcEnabled = ref(false)
+
+onMounted(async () => {
+  if (typeof route.query.error === 'string') {
+    error.value = route.query.error === 'oidc' ? t('login.oidcError') : String(route.query.error)
+  }
+  try {
+    const res = await apiJson<{ enabled: boolean }>('api/auth/oidc/status')
+    oidcEnabled.value = res.enabled
+  } catch {
+    oidcEnabled.value = false
+  }
+})
 
 async function submit() {
   error.value = null
@@ -32,6 +46,10 @@ async function submit() {
   } finally {
     busy.value = false
   }
+}
+
+function startOidc() {
+  window.location.href = apiUrl('api/auth/oidc/start')
 }
 </script>
 
@@ -74,6 +92,16 @@ async function submit() {
         <LogIn class="size-4" aria-hidden="true" />
         {{ t('login.submit') }}
       </button>
+
+      <template v-if="oidcEnabled">
+        <div class="relative text-center text-xs text-muted">
+          <span class="bg-surface px-2 relative z-10">{{ t('login.or') }}</span>
+          <span class="absolute left-0 right-0 top-1/2 border-t border-border -z-0" />
+        </div>
+        <button type="button" class="jd-btn jd-btn-ghost w-full py-2.5" @click="startOidc">
+          {{ t('login.sso') }}
+        </button>
+      </template>
 
       <div class="flex gap-2 text-xs pt-3 border-t border-border">
         <select
