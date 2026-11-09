@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
@@ -15,10 +15,13 @@ import type { Webhook, WebhookEvent } from '@/api/webhooks'
 import * as settingsApi from '@/api/settings'
 import type { AppSettings } from '@/api/settings'
 
+type SectionId = 'connection' | 'downloads' | 'account' | 'users' | 'notifications' | 'appearance'
+
 const { t, locale } = useI18n()
 const app = useAppStore()
 const downloads = useDownloadsStore()
 
+const section = ref<SectionId>('connection')
 const poll = ref(app.pollInterval)
 const maxDownloads = ref(3)
 const maxChunks = ref(1)
@@ -67,6 +70,21 @@ const webhookEventOptions: WebhookEvent[] = [
   'mover.failed',
 ]
 const error = ref<string | null>(null)
+
+const nav = computed(() =>
+  (
+    [
+      { id: 'connection' as const, label: t('settings.navConnection') },
+      { id: 'downloads' as const, label: t('settings.navDownloads') },
+      { id: 'account' as const, label: t('settings.navAccount') },
+      { id: 'users' as const, label: t('settings.navUsers') },
+      { id: 'notifications' as const, label: t('settings.navNotifications') },
+      { id: 'appearance' as const, label: t('settings.navAppearance') },
+    ] as const
+  ),
+)
+
+const moverEnabled = computed(() => settingsForm.value.moverIntervalMs > 0)
 
 async function loadWebhooks() {
   webhookError.value = null
@@ -332,343 +350,451 @@ async function removePassword(value: string) {
 </script>
 
 <template>
-  <div class="p-4 max-w-lg space-y-6">
-    <h1 class="text-lg font-semibold">{{ t('settings.title') }}</h1>
-    <p v-if="error" class="text-sm text-danger-text">{{ error }}</p>
+  <div class="p-4 md:p-5 max-w-5xl mx-auto space-y-4">
+    <header class="space-y-1">
+      <h1 class="text-xl font-semibold tracking-tight">{{ t('settings.title') }}</h1>
+      <p class="text-sm text-muted">{{ t('settings.subtitle') }}</p>
+      <p v-if="error" class="text-sm text-danger-text">{{ error }}</p>
+    </header>
 
-    <section class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.myPassword') }}</h2>
-      <form class="grid sm:grid-cols-3 gap-2" @submit.prevent="changeMyPassword">
-        <input
-          v-model="currentPassword"
-          type="password"
-          required
-          class="bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          :placeholder="t('settings.currentPassword')"
-        />
-        <input
-          v-model="myNewPassword"
-          type="password"
-          required
-          minlength="8"
-          class="bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          :placeholder="t('settings.userPassword')"
-        />
-        <button type="submit" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm">
-          {{ t('settings.changePassword') }}
-        </button>
-      </form>
-      <p v-if="myPasswordMsg" class="text-xs text-muted">{{ myPasswordMsg }}</p>
-    </section>
-
-    <section class="space-y-2">
-      <div class="flex items-center gap-2">
-        <h2 class="text-sm font-semibold text-muted mr-auto">{{ t('settings.sessions') }}</h2>
-        <button type="button" class="text-xs px-2 py-1 rounded-[10px] border border-border" @click="revokeOthers">
-          {{ t('settings.revokeOtherSessions') }}
-        </button>
-      </div>
-      <p v-if="sessionError" class="text-xs text-danger-text">{{ sessionError }}</p>
-      <ul class="space-y-1 text-xs">
-        <li
-          v-for="session in sessions"
-          :key="session.id"
-          class="flex items-start justify-between gap-2 bg-surface-2 rounded-[10px] px-2 py-1.5"
-        >
-          <div class="min-w-0">
-            <div class="text-foreground">
-              {{ session.ip || '—' }}
-              <span v-if="session.current" class="text-accent-text"> · {{ t('settings.currentSession') }}</span>
-            </div>
-            <div class="text-muted truncate" :title="session.userAgent ?? undefined">
-              {{ session.userAgent || t('settings.unknownAgent') }}
-            </div>
-          </div>
-          <button type="button" class="text-danger-text shrink-0" @click="revokeSession(session)">
-            {{ t('settings.revokeSession') }}
-          </button>
-        </li>
-      </ul>
-    </section>
-
-    <section class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.users') }}</h2>
-      <p v-if="userError" class="text-xs text-danger-text">{{ userError }}</p>
-      <ul class="space-y-1">
-        <li
-          v-for="user in users"
-          :key="user.id"
-          class="flex items-center justify-between gap-2 text-sm bg-surface-2 rounded-[10px] px-2 py-1"
-        >
-          <span>{{ user.username }}</span>
-          <button type="button" class="text-danger-text text-xs" @click="removeUser(user)">
-            {{ t('common.remove') }}
-          </button>
-        </li>
-      </ul>
-      <form class="grid sm:grid-cols-3 gap-2" @submit.prevent="addUser">
-        <input
-          v-model="newUsername"
-          required
-          class="bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          :placeholder="t('login.username')"
-        />
-        <input
-          v-model="newUserPassword"
-          type="password"
-          required
-          minlength="8"
-          class="bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          :placeholder="t('settings.userPassword')"
-        />
-        <button type="submit" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm">
-          {{ t('settings.addUser') }}
-        </button>
-      </form>
-    </section>
-
-    <section class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.notifications') }}</h2>
-      <label class="flex items-center gap-2 text-sm">
-        <input
-          v-model="app.showCompletionToasts"
-          type="checkbox"
-          @change="app.watchCompletionToasts()"
-        />
-        {{ t('settings.completionToasts') }}
-      </label>
-      <h3 class="text-xs font-semibold text-muted pt-2">{{ t('settings.webhooks') }}</h3>
-      <p class="text-xs text-muted">{{ t('settings.webhooksHint') }}</p>
-      <p v-if="webhookError" class="text-xs text-danger-text">{{ webhookError }}</p>
-      <ul class="space-y-2">
-        <li
-          v-for="hook in webhooks"
-          :key="hook.id"
-          class="flex items-start justify-between gap-2 text-sm bg-surface-2 rounded-[10px] px-2 py-1.5"
-        >
-          <div class="min-w-0 space-y-0.5">
-            <div class="font-mono text-xs truncate">{{ hook.url }}</div>
-            <div class="text-xs text-muted">{{ hook.events.join(', ') }}</div>
-          </div>
-          <div class="flex shrink-0 gap-2">
-            <button type="button" class="text-xs" @click="toggleWebhook(hook)">
-              {{ hook.enabled ? t('settings.webhookDisable') : t('settings.webhookEnable') }}
-            </button>
-            <button type="button" class="text-danger-text text-xs" @click="removeWebhook(hook)">
-              {{ t('common.remove') }}
-            </button>
-          </div>
-        </li>
-      </ul>
-      <div class="flex gap-2">
-        <input
-          v-model="newWebhookUrl"
-          class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          :placeholder="t('settings.webhookUrl')"
-          @keydown.enter="addWebhook"
-        />
-        <button type="button" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm" @click="addWebhook">
-          {{ t('common.add') }}
-        </button>
-      </div>
-    </section>
-
-    <section class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.appearance') }}</h2>
-      <div class="flex gap-2">
-        <select
-          class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          :value="locale"
-          @change="setLocale(($event.target as HTMLSelectElement).value as 'en' | 'fr')"
-        >
-          <option value="en">{{ t('lang.en') }}</option>
-          <option value="fr">{{ t('lang.fr') }}</option>
-        </select>
-        <button type="button" class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm" @click="app.flipTheme()">
-          {{ app.theme === 'dark' ? t('theme.light') : t('theme.dark') }}
-        </button>
-      </div>
-    </section>
-
-    <section class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.polling') }}</h2>
-      <div class="flex items-center gap-2">
-        <input
-          v-model.number="poll"
-          type="number"
-          min="500"
-          max="10000"
-          step="100"
-          class="w-32 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          @change="savePoll"
-        />
-        <span class="text-xs text-muted">{{ t('settings.pollingHint') }}</span>
-      </div>
-    </section>
-
-    <section class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.limits') }}</h2>
-      <label class="flex items-center justify-between gap-3 text-sm">
-        <span>{{ t('settings.maxDownloads') }}</span>
-        <input
-          v-model.number="maxDownloads"
-          type="number"
-          min="1"
-          max="20"
-          class="w-20 bg-input border border-border rounded-[10px] px-2 py-1 text-sm"
-          @change="saveLimit('downloads', maxDownloads)"
-        />
-      </label>
-      <label class="flex items-center justify-between gap-3 text-sm">
-        <span>{{ t('settings.maxChunks') }}</span>
-        <input
-          v-model.number="maxChunks"
-          type="number"
-          min="1"
-          max="20"
-          class="w-20 bg-input border border-border rounded-[10px] px-2 py-1 text-sm"
-          @change="saveLimit('chunks', maxChunks)"
-        />
-      </label>
-      <label class="flex items-center justify-between gap-3 text-sm">
-        <span>{{ t('settings.maxPerHost') }}</span>
-        <input
-          v-model.number="maxPerHost"
-          type="number"
-          min="1"
-          max="20"
-          class="w-20 bg-input border border-border rounded-[10px] px-2 py-1 text-sm"
-          @change="saveLimit('host', maxPerHost)"
-        />
-      </label>
-    </section>
-
-    <section class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.passwords') }}</h2>
-      <ul class="space-y-1">
-        <li
-          v-for="pwd in passwords"
-          :key="pwd"
-          class="flex items-center justify-between gap-2 text-sm bg-surface-2 rounded-[10px] px-2 py-1"
-        >
-          <span class="font-mono truncate">{{ pwd }}</span>
-          <button type="button" class="text-danger-text text-xs" @click="removePassword(pwd)">{{ t('common.remove') }}</button>
-        </li>
-      </ul>
-      <div class="flex gap-2">
-        <input
-          v-model="newPassword"
-          class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          :placeholder="t('settings.newPassword')"
-          @keydown.enter="addPassword"
-        />
-        <button type="button" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm" @click="addPassword">
-          {{ t('common.add') }}
-        </button>
-      </div>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.appSettings') }}</h2>
-      <p class="text-xs text-muted">{{ t('settings.appSettingsHint') }}</p>
-      <p v-if="settingsError" class="text-xs text-danger-text">{{ settingsError }}</p>
-      <p v-if="settingsMsg" class="text-xs text-accent-text">{{ settingsMsg }}</p>
-      <label class="block space-y-1 text-sm">
-        <span class="text-xs text-muted">{{ t('settings.jdApiUrl') }}</span>
-        <div class="flex gap-2">
-          <input
-            v-model="settingsForm.jdApiUrl"
-            class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
-          />
-          <button
-            type="button"
-            class="px-3 py-1.5 rounded-[10px] border border-border text-sm disabled:opacity-50"
-            :disabled="settingsBusy"
-            @click="detectJd"
-          >
-            {{ t('settings.detectJd') }}
-          </button>
-        </div>
-      </label>
-      <label class="block space-y-1 text-sm">
-        <span class="text-xs text-muted">{{ t('settings.staging') }}</span>
-        <input
-          v-model="settingsForm.stagingDir"
-          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
-        />
-      </label>
-      <label class="block space-y-1 text-sm">
-        <span class="text-xs text-muted">{{ t('settings.movies') }}</span>
-        <input
-          v-model="settingsForm.moviesDir"
-          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
-        />
-      </label>
-      <label class="block space-y-1 text-sm">
-        <span class="text-xs text-muted">{{ t('settings.shows') }}</span>
-        <input
-          v-model="settingsForm.showsDir"
-          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
-        />
-      </label>
-      <label class="block space-y-1 text-sm">
-        <span class="text-xs text-muted">{{ t('settings.other') }}</span>
-        <input
-          v-model="settingsForm.otherDir"
-          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
-        />
-      </label>
-      <label class="flex items-center justify-between gap-3 text-sm">
-        <span>{{ t('settings.moverInterval') }}</span>
-        <input
-          v-model.number="settingsForm.moverIntervalMs"
-          type="number"
-          min="0"
-          step="1000"
-          class="w-28 bg-input border border-border rounded-[10px] px-2 py-1 text-sm"
-        />
-      </label>
-      <p class="text-xs text-muted">{{ t('settings.moverIntervalHint') }}</p>
-      <div class="flex flex-wrap gap-2">
+    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <nav
+        class="lg:w-52 shrink-0 flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0 -mx-1 px-1"
+        :aria-label="t('settings.title')"
+      >
         <button
+          v-for="item in nav"
+          :key="item.id"
           type="button"
-          class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm disabled:opacity-50"
-          :disabled="settingsBusy"
-          @click="saveAppSettings"
+          class="whitespace-nowrap text-left px-3 py-2 rounded-[10px] text-sm transition-colors"
+          :class="
+            section === item.id
+              ? 'bg-surface-3 text-foreground font-medium'
+              : 'text-muted hover:bg-surface-2 hover:text-foreground'
+          "
+          @click="section = item.id"
         >
-          {{ t('settings.saveAppSettings') }}
+          {{ item.label }}
         </button>
-        <button
-          type="button"
-          class="px-3 py-1.5 rounded-[10px] border border-border text-sm disabled:opacity-50"
-          :disabled="moverBusy"
-          @click="runMover"
-        >
-          {{ t('settings.runMover') }}
-        </button>
-      </div>
-    </section>
+      </nav>
 
-    <section class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.moveHistory') }}</h2>
-      <p v-if="moveEvents.length === 0" class="text-xs text-muted">{{ t('settings.moveHistoryEmpty') }}</p>
-      <ul v-else class="space-y-2 text-xs">
-        <li
-          v-for="ev in moveEvents"
-          :key="ev.id"
-          class="rounded-[10px] bg-surface-2 px-2 py-1.5 space-y-0.5"
-        >
-          <div class="flex justify-between gap-2">
-            <span class="font-medium text-foreground truncate">{{ ev.packageName }}</span>
-            <span :class="ev.status === 'succeeded' ? 'text-accent-text' : 'text-danger-text'">
-              {{ ev.status === 'succeeded' ? t('settings.moveSucceeded') : t('settings.moveFailed') }}
-            </span>
-          </div>
-          <div class="text-muted truncate">{{ ev.fromPath }} → {{ ev.toPath }}</div>
-          <div v-if="ev.error" class="text-danger-text truncate">{{ ev.error }}</div>
-          <div class="text-muted">{{ formatMoveTime(ev.createdAt) }}</div>
-        </li>
-      </ul>
-    </section>
+      <div class="min-w-0 flex-1 space-y-4">
+        <!-- Connection / library -->
+        <template v-if="section === 'connection'">
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-4">
+            <div class="flex flex-wrap items-start gap-2">
+              <div class="mr-auto space-y-0.5">
+                <h2 class="text-sm font-semibold">{{ t('settings.appSettings') }}</h2>
+                <p class="text-xs text-muted">{{ t('settings.appSettingsHint') }}</p>
+              </div>
+              <span
+                class="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-[10px] bg-surface-2"
+                :class="moverEnabled ? 'text-accent-text' : 'text-muted'"
+              >
+                <span
+                  class="size-1.5 rounded-full"
+                  :class="moverEnabled ? 'bg-state-seed' : 'bg-state-stopped'"
+                />
+                {{ moverEnabled ? t('settings.moverOn') : t('settings.moverOff') }}
+              </span>
+            </div>
+
+            <p v-if="settingsError" class="text-xs text-danger-text">{{ settingsError }}</p>
+            <p v-if="settingsMsg" class="text-xs text-accent-text">{{ settingsMsg }}</p>
+
+            <label class="block space-y-1.5">
+              <span class="text-xs font-medium text-muted">{{ t('settings.jdApiUrl') }}</span>
+              <div class="flex gap-2">
+                <input
+                  v-model="settingsForm.jdApiUrl"
+                  class="flex-1 min-w-0 bg-input border border-border rounded-[10px] px-3 py-2 text-sm font-mono"
+                />
+                <button
+                  type="button"
+                  class="shrink-0 px-3 py-2 rounded-[10px] border border-border text-sm disabled:opacity-50"
+                  :disabled="settingsBusy"
+                  @click="detectJd"
+                >
+                  {{ t('settings.detectJd') }}
+                </button>
+              </div>
+            </label>
+
+            <div class="grid sm:grid-cols-2 gap-3">
+              <label class="block space-y-1.5 sm:col-span-2">
+                <span class="text-xs font-medium text-muted">{{ t('settings.staging') }}</span>
+                <input
+                  v-model="settingsForm.stagingDir"
+                  class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm font-mono"
+                />
+              </label>
+              <label class="block space-y-1.5">
+                <span class="text-xs font-medium text-muted">{{ t('settings.movies') }}</span>
+                <input
+                  v-model="settingsForm.moviesDir"
+                  class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm font-mono"
+                />
+              </label>
+              <label class="block space-y-1.5">
+                <span class="text-xs font-medium text-muted">{{ t('settings.shows') }}</span>
+                <input
+                  v-model="settingsForm.showsDir"
+                  class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm font-mono"
+                />
+              </label>
+              <label class="block space-y-1.5 sm:col-span-2">
+                <span class="text-xs font-medium text-muted">{{ t('settings.other') }}</span>
+                <input
+                  v-model="settingsForm.otherDir"
+                  class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm font-mono"
+                />
+              </label>
+            </div>
+
+            <label class="flex flex-wrap items-center justify-between gap-3">
+              <span class="text-sm">
+                {{ t('settings.moverInterval') }}
+                <span class="block text-xs text-muted font-normal mt-0.5">{{ t('settings.moverIntervalHint') }}</span>
+              </span>
+              <input
+                v-model.number="settingsForm.moverIntervalMs"
+                type="number"
+                min="0"
+                step="1000"
+                class="w-28 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm tabular-nums"
+              />
+            </label>
+
+            <div class="flex flex-wrap gap-2 pt-1 border-t border-border">
+              <button
+                type="button"
+                class="px-3 py-2 rounded-[10px] bg-primary text-primary-fg text-sm disabled:opacity-50"
+                :disabled="settingsBusy"
+                @click="saveAppSettings"
+              >
+                {{ t('settings.saveAppSettings') }}
+              </button>
+              <button
+                type="button"
+                class="px-3 py-2 rounded-[10px] border border-border text-sm disabled:opacity-50"
+                :disabled="moverBusy"
+                @click="runMover"
+              >
+                {{ t('settings.runMover') }}
+              </button>
+            </div>
+          </section>
+
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <h2 class="text-sm font-semibold">{{ t('settings.moveHistory') }}</h2>
+            <p v-if="moveEvents.length === 0" class="text-xs text-muted">{{ t('settings.moveHistoryEmpty') }}</p>
+            <ul v-else class="divide-y divide-border -mx-1">
+              <li
+                v-for="ev in moveEvents"
+                :key="ev.id"
+                class="px-1 py-2.5 space-y-1 text-xs first:pt-0 last:pb-0"
+              >
+                <div class="flex justify-between gap-2">
+                  <span class="font-medium text-sm text-foreground truncate">{{ ev.packageName }}</span>
+                  <span
+                    class="shrink-0"
+                    :class="ev.status === 'succeeded' ? 'text-accent-text' : 'text-danger-text'"
+                  >
+                    {{ ev.status === 'succeeded' ? t('settings.moveSucceeded') : t('settings.moveFailed') }}
+                  </span>
+                </div>
+                <div class="text-muted break-all">{{ ev.fromPath }} → {{ ev.toPath }}</div>
+                <div v-if="ev.error" class="text-danger-text break-all">{{ ev.error }}</div>
+                <div class="text-muted">{{ formatMoveTime(ev.createdAt) }}</div>
+              </li>
+            </ul>
+          </section>
+        </template>
+
+        <!-- Downloads -->
+        <template v-else-if="section === 'downloads'">
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-4">
+            <h2 class="text-sm font-semibold">{{ t('settings.polling') }}</h2>
+            <label class="flex flex-wrap items-center gap-3">
+              <input
+                v-model.number="poll"
+                type="number"
+                min="500"
+                max="10000"
+                step="100"
+                class="w-32 bg-input border border-border rounded-[10px] px-3 py-2 text-sm tabular-nums"
+                @change="savePoll"
+              />
+              <span class="text-xs text-muted">{{ t('settings.pollingHint') }}</span>
+            </label>
+          </section>
+
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <h2 class="text-sm font-semibold">{{ t('settings.limits') }}</h2>
+            <div class="grid sm:grid-cols-3 gap-3">
+              <label class="rounded-[10px] bg-surface-2 px-3 py-2.5 space-y-1.5">
+                <span class="block text-xs text-muted">{{ t('settings.maxDownloads') }}</span>
+                <input
+                  v-model.number="maxDownloads"
+                  type="number"
+                  min="1"
+                  max="20"
+                  class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm tabular-nums"
+                  @change="saveLimit('downloads', maxDownloads)"
+                />
+              </label>
+              <label class="rounded-[10px] bg-surface-2 px-3 py-2.5 space-y-1.5">
+                <span class="block text-xs text-muted">{{ t('settings.maxChunks') }}</span>
+                <input
+                  v-model.number="maxChunks"
+                  type="number"
+                  min="1"
+                  max="20"
+                  class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm tabular-nums"
+                  @change="saveLimit('chunks', maxChunks)"
+                />
+              </label>
+              <label class="rounded-[10px] bg-surface-2 px-3 py-2.5 space-y-1.5">
+                <span class="block text-xs text-muted">{{ t('settings.maxPerHost') }}</span>
+                <input
+                  v-model.number="maxPerHost"
+                  type="number"
+                  min="1"
+                  max="20"
+                  class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm tabular-nums"
+                  @change="saveLimit('host', maxPerHost)"
+                />
+              </label>
+            </div>
+          </section>
+
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <h2 class="text-sm font-semibold">{{ t('settings.passwords') }}</h2>
+            <ul v-if="passwords.length" class="space-y-1.5">
+              <li
+                v-for="pwd in passwords"
+                :key="pwd"
+                class="flex items-center justify-between gap-2 text-sm bg-surface-2 rounded-[10px] px-3 py-2"
+              >
+                <span class="font-mono truncate">{{ pwd }}</span>
+                <button type="button" class="text-danger-text text-xs shrink-0" @click="removePassword(pwd)">
+                  {{ t('common.remove') }}
+                </button>
+              </li>
+            </ul>
+            <p v-else class="text-xs text-muted">{{ t('settings.passwordsEmpty') }}</p>
+            <div class="flex gap-2">
+              <input
+                v-model="newPassword"
+                class="flex-1 min-w-0 bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+                :placeholder="t('settings.newPassword')"
+                @keydown.enter="addPassword"
+              />
+              <button
+                type="button"
+                class="px-3 py-2 rounded-[10px] bg-primary text-primary-fg text-sm shrink-0"
+                @click="addPassword"
+              >
+                {{ t('common.add') }}
+              </button>
+            </div>
+          </section>
+        </template>
+
+        <!-- Account -->
+        <template v-else-if="section === 'account'">
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <h2 class="text-sm font-semibold">{{ t('settings.myPassword') }}</h2>
+            <form class="grid sm:grid-cols-[1fr_1fr_auto] gap-2" @submit.prevent="changeMyPassword">
+              <input
+                v-model="currentPassword"
+                type="password"
+                required
+                class="bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+                :placeholder="t('settings.currentPassword')"
+              />
+              <input
+                v-model="myNewPassword"
+                type="password"
+                required
+                minlength="8"
+                class="bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+                :placeholder="t('settings.userPassword')"
+              />
+              <button type="submit" class="px-3 py-2 rounded-[10px] bg-primary text-primary-fg text-sm">
+                {{ t('settings.changePassword') }}
+              </button>
+            </form>
+            <p v-if="myPasswordMsg" class="text-xs text-muted">{{ myPasswordMsg }}</p>
+          </section>
+
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-semibold mr-auto">{{ t('settings.sessions') }}</h2>
+              <button
+                type="button"
+                class="text-xs px-2.5 py-1.5 rounded-[10px] border border-border"
+                @click="revokeOthers"
+              >
+                {{ t('settings.revokeOtherSessions') }}
+              </button>
+            </div>
+            <p v-if="sessionError" class="text-xs text-danger-text">{{ sessionError }}</p>
+            <ul class="space-y-2">
+              <li
+                v-for="session in sessions"
+                :key="session.id"
+                class="flex items-start justify-between gap-3 rounded-[10px] bg-surface-2 px-3 py-2.5"
+              >
+                <div class="min-w-0 space-y-0.5 text-xs">
+                  <div class="text-sm text-foreground">
+                    {{ session.ip || '—' }}
+                    <span v-if="session.current" class="text-accent-text"> · {{ t('settings.currentSession') }}</span>
+                  </div>
+                  <div class="text-muted truncate" :title="session.userAgent ?? undefined">
+                    {{ session.userAgent || t('settings.unknownAgent') }}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="text-danger-text text-xs shrink-0"
+                  @click="revokeSession(session)"
+                >
+                  {{ t('settings.revokeSession') }}
+                </button>
+              </li>
+            </ul>
+          </section>
+        </template>
+
+        <!-- Users -->
+        <template v-else-if="section === 'users'">
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <h2 class="text-sm font-semibold">{{ t('settings.users') }}</h2>
+            <p v-if="userError" class="text-xs text-danger-text">{{ userError }}</p>
+            <ul class="space-y-1.5">
+              <li
+                v-for="user in users"
+                :key="user.id"
+                class="flex items-center justify-between gap-2 text-sm bg-surface-2 rounded-[10px] px-3 py-2"
+              >
+                <span>{{ user.username }}</span>
+                <button type="button" class="text-danger-text text-xs" @click="removeUser(user)">
+                  {{ t('common.remove') }}
+                </button>
+              </li>
+            </ul>
+            <form class="grid sm:grid-cols-[1fr_1fr_auto] gap-2 pt-1 border-t border-border" @submit.prevent="addUser">
+              <input
+                v-model="newUsername"
+                required
+                class="bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+                :placeholder="t('login.username')"
+              />
+              <input
+                v-model="newUserPassword"
+                type="password"
+                required
+                minlength="8"
+                class="bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+                :placeholder="t('settings.userPassword')"
+              />
+              <button type="submit" class="px-3 py-2 rounded-[10px] bg-primary text-primary-fg text-sm">
+                {{ t('settings.addUser') }}
+              </button>
+            </form>
+          </section>
+        </template>
+
+        <!-- Notifications -->
+        <template v-else-if="section === 'notifications'">
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <h2 class="text-sm font-semibold">{{ t('settings.notifications') }}</h2>
+            <label class="flex items-center gap-2.5 text-sm rounded-[10px] bg-surface-2 px-3 py-2.5 cursor-pointer">
+              <input
+                v-model="app.showCompletionToasts"
+                type="checkbox"
+                class="size-4 accent-[var(--jd-primary)]"
+                @change="app.watchCompletionToasts()"
+              />
+              {{ t('settings.completionToasts') }}
+            </label>
+          </section>
+
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <div class="space-y-0.5">
+              <h2 class="text-sm font-semibold">{{ t('settings.webhooks') }}</h2>
+              <p class="text-xs text-muted">{{ t('settings.webhooksHint') }}</p>
+            </div>
+            <p v-if="webhookError" class="text-xs text-danger-text">{{ webhookError }}</p>
+            <ul class="space-y-2">
+              <li
+                v-for="hook in webhooks"
+                :key="hook.id"
+                class="flex items-start justify-between gap-3 rounded-[10px] bg-surface-2 px-3 py-2.5"
+              >
+                <div class="min-w-0 space-y-0.5">
+                  <div class="font-mono text-xs truncate">{{ hook.url }}</div>
+                  <div class="text-xs text-muted">{{ hook.events.join(', ') }}</div>
+                </div>
+                <div class="flex shrink-0 gap-2">
+                  <button type="button" class="text-xs" @click="toggleWebhook(hook)">
+                    {{ hook.enabled ? t('settings.webhookDisable') : t('settings.webhookEnable') }}
+                  </button>
+                  <button type="button" class="text-danger-text text-xs" @click="removeWebhook(hook)">
+                    {{ t('common.remove') }}
+                  </button>
+                </div>
+              </li>
+            </ul>
+            <div class="flex gap-2">
+              <input
+                v-model="newWebhookUrl"
+                class="flex-1 min-w-0 bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+                :placeholder="t('settings.webhookUrl')"
+                @keydown.enter="addWebhook"
+              />
+              <button
+                type="button"
+                class="px-3 py-2 rounded-[10px] bg-primary text-primary-fg text-sm shrink-0"
+                @click="addWebhook"
+              >
+                {{ t('common.add') }}
+              </button>
+            </div>
+          </section>
+        </template>
+
+        <!-- Appearance -->
+        <template v-else>
+          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+            <h2 class="text-sm font-semibold">{{ t('settings.appearance') }}</h2>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <label class="block space-y-1.5">
+                <span class="text-xs font-medium text-muted">{{ t('lang.label') }}</span>
+                <select
+                  class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+                  :value="locale"
+                  @change="setLocale(($event.target as HTMLSelectElement).value as 'en' | 'fr')"
+                >
+                  <option value="en">{{ t('lang.en') }}</option>
+                  <option value="fr">{{ t('lang.fr') }}</option>
+                </select>
+              </label>
+              <div class="space-y-1.5">
+                <span class="block text-xs font-medium text-muted">{{ t('theme.toggle') }}</span>
+                <button
+                  type="button"
+                  class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm text-left"
+                  @click="app.flipTheme()"
+                >
+                  {{ app.theme === 'dark' ? t('theme.light') : t('theme.dark') }}
+                </button>
+              </div>
+            </div>
+          </section>
+        </template>
+      </div>
+    </div>
   </div>
 </template>
