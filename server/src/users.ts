@@ -1,6 +1,7 @@
 import { getDb } from './db.js'
 import { hashPassword, verifyPassword } from './crypto.js'
 import { config } from './config.js'
+import { log } from './log.js'
 
 export interface UserRow {
   id: number
@@ -109,6 +110,6 @@ export async function seedAdminFromEnv(): Promise<boolean> {
   if (countUsers() > 0) return false
   if (!config.seedUser || !config.seedPassword) return false
   await createUser(config.seedUser, config.seedPassword)
-  console.log(`Seeded admin user "${config.seedUser}" from environment`)
+  log('info', 'seeded admin from env', { username: config.seedUser })
   return true
 }

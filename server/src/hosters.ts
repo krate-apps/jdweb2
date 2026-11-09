@@ -93,6 +93,10 @@ async function listJdAccounts(): Promise<JdAccount[]> {
   }
 }
 
+export function countHosters(): number {
+  return (getDb().prepare('SELECT COUNT(*) AS n FROM hoster_accounts').get() as { n: number }).n
+}
+
 export async function listHosters(): Promise<HosterPublic[]> {
   const rows = getDb()
     .prepare(

@@ -1,5 +1,6 @@
 import { config } from './config.js'
 import { getDb } from './db.js'
+import { log } from './log.js'
 
 export const WEBHOOK_EVENTS = ['download.finished', 'mover.succeeded', 'mover.failed'] as const
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number]
@@ -146,12 +147,12 @@ export async function dispatchWebhook(payload: WebhookPayload): Promise<void> {
         })
         if (!res.ok) {
           failureCount += 1
-          console.warn(`[webhook] ${hook.url} returned ${res.status}`)
+          log('warn', 'webhook non-ok status', { url: hook.url, status: res.status, event: payload.event })
         }
       } catch (err) {
         failureCount += 1
         const message = err instanceof Error ? err.message : String(err)
-        console.warn(`[webhook] ${hook.url} failed: ${message}`)
+        log('warn', 'webhook delivery failed', { url: hook.url, error: message, event: payload.event })
       } finally {
         clearTimeout(timer)
       }

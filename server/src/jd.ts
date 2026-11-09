@@ -1,4 +1,6 @@
 import { config } from './config.js'
+import { log } from './log.js'
+import { noteJdError } from './metrics.js'
 
 export class JdError extends Error {
   constructor(
@@ -24,10 +26,15 @@ export async function jdCall<T>(path: string, ...params: unknown[]): Promise<T> 
       body: JSON.stringify({ params }),
     })
   } catch (err) {
-    throw new JdError(503, err instanceof Error ? err.message : 'JDownloader unreachable')
+    noteJdError()
+    const message = err instanceof Error ? err.message : 'JDownloader unreachable'
+    log('error', 'jd call failed', { path, error: message })
+    throw new JdError(503, message)
   }
   if (!response.ok) {
+    noteJdError()
     const text = await response.text().catch(() => '')
+    log('error', 'jd call non-ok', { path, status: response.status })
     throw new JdError(response.status, text || response.statusText)
   }
   const body = (await response.json()) as { data: T }
@@ -43,7 +50,9 @@ export async function proxyJdRequest(path: string, rawBody: string | undefined):
       body: rawBody && rawBody.length > 0 ? rawBody : '{"params":[]}',
     })
   } catch (err) {
+    noteJdError()
     const detail = err instanceof Error ? err.message : 'unreachable'
+    log('error', 'jd proxy failed', { path, error: detail })
     return new Response(
       JSON.stringify({
         error: 'jdownloader_unreachable',

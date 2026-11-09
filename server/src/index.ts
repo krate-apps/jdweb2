@@ -32,6 +32,7 @@ import {
   verifyLogin,
 } from './users.js'
 import {
+  countHosters,
   createHoster,
   deleteHoster,
   importHostersFromJd,
@@ -45,14 +46,18 @@ import { isLibraryRoot, listLibraryFolders } from './library.js'
 import { rotateHosterSecrets } from './crypto.js'
 import {
   WEBHOOK_EVENTS,
+  countWebhooks,
   createWebhook,
   deleteWebhook,
   dispatchWebhook,
   listWebhooks,
   seedWebhooksFromEnv,
   updateWebhook,
+  webhookFailureCount,
   type WebhookEvent,
 } from './webhooks.js'
+import { log } from './log.js'
+import { metricsText, noteAuthLogin, snapshotMetrics } from './metrics.js'
 
 type Vars = { username: string; sessionId: string; userId: number }
 
@@ -146,7 +151,13 @@ app.post(mount('/api/auth/login'), async (c) => {
   if (countUsers() === 0) return c.json({ error: 'needs_setup' }, 503)
   const body = (await c.req.json().catch(() => null)) as { username?: string; password?: string } | null
   const user = await verifyLogin(body?.username ?? '', body?.password ?? '')
-  if (!user) return c.json({ error: 'invalid_credentials' }, 401)
+  if (!user) {
+    noteAuthLogin(false)
+    log('warn', 'auth login failed', { username: body?.username?.trim() || null })
+    return c.json({ error: 'invalid_credentials' }, 401)
+  }
+  noteAuthLogin(true)
+  log('info', 'auth login ok', { username: user.username })
   issueSession(c, user.username, sessionMeta(c))
   return c.json({ username: user.username })
 })
@@ -469,6 +480,20 @@ app.delete(mount('/api/webhooks/:id'), requireAuth, (c) => {
   return c.json({ ok: true })
 })
 
+app.get(mount('/api/metrics'), requireAuth, (c) => {
+  const extra = {
+    users: countUsers(),
+    hosters: countHosters(),
+    webhooks: countWebhooks(),
+    webhook_failures: webhookFailureCount(),
+  }
+  const accept = c.req.header('accept') ?? ''
+  if (accept.includes('text/plain')) {
+    return c.text(metricsText(extra), 200, { 'content-type': 'text/plain; charset=utf-8' })
+  }
+  return c.json(snapshotMetrics(extra))
+})
+
 app.post(mount('/api/webhooks/notify'), requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
     event?: string
@@ -533,12 +558,12 @@ async function main() {
   initDb()
   const rotated = rotateHosterSecrets()
   if (rotated > 0) {
-    console.log(`Re-encrypted ${rotated} hoster secret(s) with JDWEB_DATA_KEY; remove JDWEB_DATA_KEY_PREVIOUS after verifying`)
+    log('info', 'rotated hoster secrets', { count: rotated })
   }
   await seedAdminFromEnv()
   const seededHooks = seedWebhooksFromEnv()
   if (seededHooks > 0) {
-    console.log(`Seeded ${seededHooks} webhook(s) from JDWEB_WEBHOOK_URLS`)
+    log('info', 'seeded webhooks from env', { count: seededHooks })
   }
   startMover()
 
@@ -573,17 +598,21 @@ async function main() {
     })
   }
 
-  console.log(`jdweb listening on http://${config.host}:${config.port}${base || '/'}`)
+  log('info', 'jdweb listening', {
+    url: `http://${config.host}:${config.port}${base || '/'}`,
+    users: countUsers(),
+    uiBuilt,
+  })
   if (countUsers() === 0) {
-    console.log('No users yet — set JDWEB_USER/JDWEB_PASSWORD or POST /api/setup/admin from localhost')
+    log('info', 'no users yet; seed via JDWEB_USER/JDWEB_PASSWORD or POST /api/setup/admin from localhost')
   }
   if (!uiBuilt) {
-    console.log('web/dist missing — API only; use Vite at http://127.0.0.1:5173/ during development')
+    log('info', 'web dist missing; use Vite at http://127.0.0.1:5173 during development')
   }
   serve({ fetch: app.fetch, hostname: config.host, port: config.port })
 }
 
 main().catch((err) => {
-  console.error(err)
+  log('error', 'fatal startup error', { error: err instanceof Error ? err.message : String(err) })
   process.exit(1)
 })

@@ -6,6 +6,8 @@ import { jdCall } from './jd.js'
 import { libraryPathForStaging } from './destinations.js'
 import { recordMoveEvent } from './move-history.js'
 import { dispatchWebhook } from './webhooks.js'
+import { log } from './log.js'
+import { noteMoverTick } from './metrics.js'
 
 interface PackageInfo {
   uuid: number
@@ -45,9 +47,10 @@ async function tick(): Promise<void> {
   if (running) return
   running = true
   try {
-    await processFinishedPackages()
+    const result = await processFinishedPackages()
+    noteMoverTick(result)
     if (jdReachable === false) {
-      console.log('[mover] JDownloader is reachable again')
+      log('info', 'mover jd reachable again', { jdApiUrl: config.jdApiUrl })
     }
     jdReachable = true
   } catch (err) {
@@ -55,11 +58,11 @@ async function tick(): Promise<void> {
     const offline = /fetch failed|unreachable|ECONNREFUSED|ENOTFOUND|503/i.test(message)
     if (offline) {
       if (jdReachable !== false) {
-        console.warn(`[mover] JDownloader unreachable (${config.jdApiUrl}); will keep trying quietly`)
+        log('warn', 'mover jd unreachable', { jdApiUrl: config.jdApiUrl })
       }
       jdReachable = false
     } else {
-      console.error('[mover]', message)
+      log('error', 'mover tick failed', { error: message })
     }
   } finally {
     running = false
@@ -72,6 +75,7 @@ export async function runMoverNow(): Promise<MoverRunResult> {
   running = true
   try {
     const result = await processFinishedPackages()
+    noteMoverTick(result)
     jdReachable = true
     return result
   } finally {
