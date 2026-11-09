@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGrabberStore } from '@/stores/grabber'
 import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
 import { formatSize } from '@/lib/format'
+import { moveGrabberToDownloads, removeGrabberLinks } from '@/api/jd'
+import ContextMenu, { type ContextMenuItem } from '@/components/ui/ContextMenu.vue'
 
 const { t } = useI18n()
 const grabber = useGrabberStore()
 const app = useAppStore()
 const downloads = useDownloadsStore()
+
+const menu = ref<{ visible: boolean; x: number; y: number; uuid: number } | null>(null)
+
+const menuItems = computed<ContextMenuItem[]>(() => [
+  { id: 'confirm', label: t('context.confirm') },
+  { id: 'openurl', label: t('context.openUrl') },
+  { id: 'remove', label: t('common.remove'), danger: true },
+])
 
 onMounted(() => void grabber.refresh())
 
@@ -22,10 +32,42 @@ async function confirmSelected() {
   await grabber.confirmSelected()
   await downloads.refresh()
 }
+
+function showMenu(event: MouseEvent, uuid: number) {
+  menu.value = { visible: true, x: event.clientX, y: event.clientY, uuid }
+}
+
+function hideMenu() {
+  menu.value = null
+}
+
+async function onMenuSelect(action: string) {
+  const current = menu.value
+  hideMenu()
+  if (!current) return
+  const ids =
+    grabber.selected.size > 1 && grabber.selected.has(current.uuid)
+      ? [...grabber.selected]
+      : [current.uuid]
+
+  if (action === 'confirm') {
+    await moveGrabberToDownloads(ids)
+    grabber.selected = new Set()
+    await grabber.refresh()
+    await downloads.refresh()
+  } else if (action === 'remove') {
+    await removeGrabberLinks(ids)
+    grabber.selected = new Set()
+    await grabber.refresh()
+  } else if (action === 'openurl') {
+    const link = grabber.links.find((l) => l.uuid === current.uuid)
+    if (link?.url) window.open(link.url, '_blank', 'noopener,noreferrer')
+  }
+}
 </script>
 
 <template>
-  <div class="p-3 space-y-3">
+  <div class="p-3 space-y-3" @click="hideMenu">
     <div class="flex flex-wrap gap-2 items-center">
       <h1 class="text-lg font-semibold mr-auto">{{ t('grabber.title') }}</h1>
       <button type="button" class="px-2 py-1 text-sm rounded-[10px] bg-primary text-primary-fg" @click="confirmAll">
@@ -63,7 +105,12 @@ async function confirmSelected() {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="link in grabber.links" :key="link.uuid" class="border-b border-border/50 hover:bg-surface-2/50">
+        <tr
+          v-for="link in grabber.links"
+          :key="link.uuid"
+          class="border-b border-border/50 hover:bg-surface-2/50"
+          @contextmenu.prevent="showMenu($event, link.uuid)"
+        >
           <td class="py-1.5">
             <input
               type="checkbox"
@@ -79,5 +126,14 @@ async function confirmSelected() {
       </tbody>
     </table>
     <p v-else class="text-sm text-muted text-center py-10">{{ t('grabber.empty') }}</p>
+
+    <ContextMenu
+      v-if="menu?.visible"
+      :x="menu.x"
+      :y="menu.y"
+      :items="menuItems"
+      @select="onMenuSelect"
+      @close="hideMenu"
+    />
   </div>
 </template>

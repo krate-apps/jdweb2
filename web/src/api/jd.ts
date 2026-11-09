@@ -38,6 +38,7 @@ export interface GrabberLink {
   host?: string
   availability?: string
   enabled?: boolean
+  url?: string
 }
 
 export interface Account {
@@ -131,24 +132,45 @@ export function queryGrabberLinks() {
     host: true,
     availability: true,
     enabled: true,
+    url: true,
   })
 }
 
 export function addLinks(payload: {
-  links: string
+  links?: string
+  dataURLs?: string[]
   destinationFolder?: string
   overwritePackagizerRules?: boolean
   autostart?: boolean
   packageName?: string
+  assignJobID?: boolean
 }) {
   return jdCall<{ id: number }>('/linkgrabberv2/addLinks', {
-    links: payload.links,
+    ...(payload.links ? { links: payload.links } : {}),
+    ...(payload.dataURLs?.length ? { dataURLs: payload.dataURLs } : {}),
     destinationFolder: payload.destinationFolder,
     overwritePackagizerRules: payload.overwritePackagizerRules ?? true,
     autostart: payload.autostart ?? false,
     packageName: payload.packageName,
+    assignJobID: payload.assignJobID ?? true,
   })
 }
+
+/** Read a .dlc (or similar) container as the data URL JD expects. */
+export function containerDataUrl(file: File): Promise<string> {
+  const extension = file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const url = reader.result as string
+      resolve(`data:application/${extension};base64,${url.slice(url.indexOf(',') + 1)}`)
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+export const CONTAINER_EXTENSIONS = ['.dlc']
 
 export function moveGrabberToDownloads(linkIds: number[], packageIds: number[] = []) {
   return jdCall('/linkgrabberv2/moveToDownloadlist', linkIds, packageIds)
