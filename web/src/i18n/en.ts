@@ -18,6 +18,14 @@ export default {
     submit: 'Sign in',
     error: 'Invalid username or password',
   },
+  setup: {
+    title: 'Create the first administrator',
+    hint: 'Available only from localhost when no users exist yet. You can also seed via JDWEB_USER / JDWEB_PASSWORD.',
+    submit: 'Create admin',
+    localhostOnly: 'Initial setup is only allowed from localhost.',
+    alreadyDone: 'Setup is already complete. Sign in instead.',
+    passwordTooShort: 'Password must be at least 8 characters.',
+  },
   theme: {
     dark: 'Dark',
     light: 'Light',
@@ -119,6 +127,8 @@ export default {
     refresh: 'Recheck all',
     empty: 'Add your first premium account.',
     removeConfirm: 'Remove this account?',
+    notSynced: 'not in JD',
+    resync: 'Resync',
   },
   settings: {
     title: 'Settings',
@@ -141,6 +151,10 @@ export default {
     notifications: 'Notifications',
     completionToasts: 'Show a toast when a package finishes',
     downloadComplete: 'Download finished: {name}',
+    users: 'jdweb users',
+    addUser: 'Add user',
+    userPassword: 'Password (min. 8 characters)',
+    removeUserConfirm: 'Remove this user?',
   },
   context: {
     pause: 'Pause',

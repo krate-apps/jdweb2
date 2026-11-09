@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Account } from '@/api/jd'
-import * as jd from '@/api/jd'
+import type { HosterAccount } from '@/api/hosters'
+import * as hostersApi from '@/api/hosters'
 import { formatSize } from '@/lib/format'
+import { ApiError } from '@/api/http'
 
 const { t } = useI18n()
-const accounts = ref<Account[]>([])
+const accounts = ref<HosterAccount[]>([])
 const showForm = ref(false)
 const hoster = ref('')
 const username = ref('')
@@ -15,7 +16,8 @@ const error = ref<string | null>(null)
 const busy = ref(false)
 
 async function refresh() {
-  accounts.value = (await jd.listAccounts()) ?? []
+  const res = await hostersApi.listHosters()
+  accounts.value = res.hosters
 }
 
 onMounted(() => void refresh())
@@ -24,34 +26,41 @@ async function add() {
   error.value = null
   busy.value = true
   try {
-    await jd.addAccount(hoster.value.trim(), username.value.trim(), password.value)
+    await hostersApi.createHoster({
+      hoster: hoster.value.trim(),
+      username: username.value.trim(),
+      password: password.value,
+    })
     hoster.value = ''
     username.value = ''
     password.value = ''
     showForm.value = false
     await refresh()
   } catch (err) {
-    error.value = err instanceof Error ? err.message : t('common.error')
+    error.value = err instanceof ApiError ? err.message : t('common.error')
   } finally {
     busy.value = false
   }
 }
 
-async function toggle(account: Account) {
-  if (account.enabled) await jd.disableAccounts([account.uuid])
-  else await jd.enableAccounts([account.uuid])
+async function toggle(account: HosterAccount) {
+  await hostersApi.patchHoster(account.id, { enabled: !account.enabled })
   await refresh()
 }
 
-async function remove(account: Account) {
+async function remove(account: HosterAccount) {
   if (!confirm(t('accounts.removeConfirm'))) return
-  await jd.removeAccounts([account.uuid])
+  await hostersApi.deleteHoster(account.id)
   await refresh()
 }
 
 async function refreshAll() {
-  const ids = accounts.value.map((a) => a.uuid)
-  if (ids.length) await jd.refreshAccounts(ids)
+  const res = await hostersApi.refreshHosters()
+  accounts.value = res.hosters
+}
+
+async function resync(account: HosterAccount) {
+  await hostersApi.resyncHoster(account.id)
   await refresh()
 }
 </script>
@@ -101,12 +110,13 @@ async function refreshAll() {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="account in accounts" :key="account.uuid" class="border-b border-border/50">
-          <td class="py-1.5">{{ account.hostname }}</td>
+        <tr v-for="account in accounts" :key="account.id" class="border-b border-border/50">
+          <td class="py-1.5">{{ account.hoster }}</td>
           <td class="py-1.5 truncate max-w-[160px]">{{ account.username }}</td>
           <td class="py-1.5 text-muted">
             {{ account.status || (account.valid ? 'OK' : '—') }}
             <span v-if="account.errorString" class="text-danger-text" :title="account.errorString"> (!)</span>
+            <span v-if="account.jdUuid == null" class="text-xs text-muted"> · {{ t('accounts.notSynced') }}</span>
           </td>
           <td class="py-1.5 hidden sm:table-cell">
             {{ account.trafficLeft != null ? formatSize(account.trafficLeft) : '—' }}
@@ -114,7 +124,8 @@ async function refreshAll() {
           <td class="py-1.5">
             <input type="checkbox" :checked="account.enabled" @change="toggle(account)" />
           </td>
-          <td class="py-1.5 text-right">
+          <td class="py-1.5 text-right space-x-2">
+            <button type="button" class="text-accent-text text-xs" @click="resync(account)">{{ t('accounts.resync') }}</button>
             <button type="button" class="text-danger-text text-xs" @click="remove(account)">{{ t('common.remove') }}</button>
           </td>
         </tr>

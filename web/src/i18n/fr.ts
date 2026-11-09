@@ -18,6 +18,14 @@ export default {
     submit: 'Se connecter',
     error: 'Identifiants incorrects',
   },
+  setup: {
+    title: 'Créer le premier administrateur',
+    hint: 'Disponible uniquement depuis localhost tant qu’il n’y a aucun utilisateur. Seed possible via JDWEB_USER / JDWEB_PASSWORD.',
+    submit: 'Créer l’admin',
+    localhostOnly: 'La configuration initiale n’est autorisée que depuis localhost.',
+    alreadyDone: 'La configuration est déjà terminée. Connectez-vous.',
+    passwordTooShort: 'Le mot de passe doit contenir au moins 8 caractères.',
+  },
   theme: {
     dark: 'Sombre',
     light: 'Clair',
@@ -119,6 +127,8 @@ export default {
     refresh: 'Revérifier tous',
     empty: 'Ajoutez votre premier compte premium.',
     removeConfirm: 'Supprimer ce compte ?',
+    notSynced: 'absent de JD',
+    resync: 'Resync',
   },
   settings: {
     title: 'Réglages',
@@ -141,6 +151,10 @@ export default {
     notifications: 'Notifications',
     completionToasts: 'Afficher une notification quand un paquet se termine',
     downloadComplete: 'Téléchargement terminé : {name}',
+    users: 'Utilisateurs jdweb',
+    addUser: 'Ajouter un utilisateur',
+    userPassword: 'Mot de passe (min. 8 caractères)',
+    removeUserConfirm: 'Supprimer cet utilisateur ?',
   },
   context: {
     pause: 'Pause',

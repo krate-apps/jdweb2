@@ -4,7 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
 import * as jd from '@/api/jd'
+import * as usersApi from '@/api/users'
+import type { AppUser } from '@/api/users'
 import { setLocale } from '@/i18n'
+import { ApiError } from '@/api/http'
 
 const { t, locale } = useI18n()
 const app = useAppStore()
@@ -16,6 +19,10 @@ const maxChunks = ref(1)
 const maxPerHost = ref(1)
 const passwords = ref<string[]>([])
 const newPassword = ref('')
+const users = ref<AppUser[]>([])
+const newUsername = ref('')
+const newUserPassword = ref('')
+const userError = ref<string | null>(null)
 const error = ref<string | null>(null)
 
 function formatErr(err: unknown): string {
@@ -26,6 +33,38 @@ function formatErr(err: unknown): string {
   return message || t('common.error')
 }
 
+async function loadUsers() {
+  userError.value = null
+  try {
+    users.value = (await usersApi.listUsers()).users
+  } catch (err) {
+    userError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function addUser() {
+  userError.value = null
+  try {
+    await usersApi.createUser(newUsername.value.trim(), newUserPassword.value)
+    newUsername.value = ''
+    newUserPassword.value = ''
+    await loadUsers()
+  } catch (err) {
+    userError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function removeUser(user: AppUser) {
+  if (!confirm(t('settings.removeUserConfirm'))) return
+  userError.value = null
+  try {
+    await usersApi.deleteUser(user.id)
+    await loadUsers()
+  } catch (err) {
+    userError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
 async function load() {
   error.value = null
   try {
@@ -33,6 +72,7 @@ async function load() {
   } catch {
     /* paths are optional if session is odd */
   }
+  void loadUsers()
   try {
     maxDownloads.value = (await jd.getMaxSimultDownloads()) ?? 3
     maxChunks.value = (await jd.getMaxChunks()) ?? 1
@@ -84,6 +124,42 @@ async function removePassword(value: string) {
   <div class="p-4 max-w-lg space-y-6">
     <h1 class="text-lg font-semibold">{{ t('settings.title') }}</h1>
     <p v-if="error" class="text-sm text-danger-text">{{ error }}</p>
+
+    <section class="space-y-2">
+      <h2 class="text-sm font-semibold text-muted">{{ t('settings.users') }}</h2>
+      <p v-if="userError" class="text-xs text-danger-text">{{ userError }}</p>
+      <ul class="space-y-1">
+        <li
+          v-for="user in users"
+          :key="user.id"
+          class="flex items-center justify-between gap-2 text-sm bg-surface-2 rounded-[10px] px-2 py-1"
+        >
+          <span>{{ user.username }}</span>
+          <button type="button" class="text-danger-text text-xs" @click="removeUser(user)">
+            {{ t('common.remove') }}
+          </button>
+        </li>
+      </ul>
+      <form class="grid sm:grid-cols-3 gap-2" @submit.prevent="addUser">
+        <input
+          v-model="newUsername"
+          required
+          class="bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
+          :placeholder="t('login.username')"
+        />
+        <input
+          v-model="newUserPassword"
+          type="password"
+          required
+          minlength="8"
+          class="bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
+          :placeholder="t('settings.userPassword')"
+        />
+        <button type="submit" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm">
+          {{ t('settings.addUser') }}
+        </button>
+      </form>
+    </section>
 
     <section class="space-y-2">
       <h2 class="text-sm font-semibold text-muted">{{ t('settings.notifications') }}</h2>
