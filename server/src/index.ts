@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server'
 import { getConnInfo } from '@hono/node-server/conninfo'
 import { Hono } from 'hono'
 import type { Context } from 'hono'
+import { streamSSE } from 'hono/streaming'
 import { getMimeType } from 'hono/utils/mime'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { access, mkdir, readFile } from 'node:fs/promises'
@@ -69,6 +70,12 @@ import {
 } from './webhooks.js'
 import { log } from './log.js'
 import { metricsText, noteAuthLogin, snapshotMetrics } from './metrics.js'
+import { addEventsClient, removeEventsClient, sendEventsSnapshot } from './events.js'
+import { buildAuthorizeUrl, exchangeCode, oidcEnabled } from './oidc.js'
+import { deleteStaging, listStaging } from './staging.js'
+import { createBackupFile, restoreBackupBytes } from './backup.js'
+import { tmpdir } from 'node:os'
+import { readFile as readFileFs, unlink } from 'node:fs/promises'
 
 type Vars = { username: string; sessionId: string; userId: number }
 
@@ -122,6 +129,11 @@ function errorStatus(message: string): ContentfulStatusCode {
     case 'invalid_jd_api_url':
     case 'jd_api_url_not_private':
     case 'invalid_mover_interval':
+    case 'invalid_path':
+    case 'cannot_delete_root':
+    case 'path_required':
+    case 'file_required':
+    case 'invalid_sqlite':
     case 'invalid_base_path':
     case 'path_required':
       return 400
@@ -140,7 +152,7 @@ app.use('*', async (c, next) => {
   c.header('X-Frame-Options', 'DENY')
   c.header(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'",
   )
   await next()
 })
@@ -210,6 +222,47 @@ app.post('/api/setup/probe-jd', async (c) => {
     if (result.ok) found.push({ url, version: result.version })
   }
   return c.json({ candidates: found })
+})
+
+app.get('/api/auth/oidc/status', (c) => c.json({ enabled: oidcEnabled() }))
+
+app.get('/api/auth/oidc/start', async (c) => {
+  if (!oidcEnabled()) return c.json({ error: 'oidc_not_configured' }, 404)
+  try {
+    const { url } = await buildAuthorizeUrl()
+    return c.redirect(url)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'oidc_start_failed'
+    return c.json({ error: message }, 502)
+  }
+})
+
+app.get('/api/auth/oidc/callback', async (c) => {
+  if (!oidcEnabled()) return c.json({ error: 'oidc_not_configured' }, 404)
+  const code = c.req.query('code')
+  const state = c.req.query('state')
+  const oauthError = c.req.query('error')
+  const base = getBasePath()
+  const loginPath = `${base || ''}/login`
+  if (oauthError || !code || !state) {
+    return c.redirect(`${loginPath}?error=oidc`)
+  }
+  try {
+    const user = await exchangeCode(code, state)
+    const info = getConnInfo(c)
+    issueSession(c, user.username, {
+      userAgent: c.req.header('user-agent') ?? undefined,
+      ip: info.remote.address,
+    })
+    recordAudit('auth.oidc_ok', user.username, user.username)
+    noteAuthLogin(true)
+    return c.redirect(`${base || ''}/downloads`)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'oidc_failed'
+    recordAudit('auth.oidc_failed', message)
+    noteAuthLogin(false)
+    return c.redirect(`${loginPath}?error=${encodeURIComponent(message)}`)
+  }
 })
 
 app.post('/api/auth/login', async (c) => {
@@ -430,6 +483,25 @@ app.get('/api/config/public', requireAuth, (c) => {
     moverEnabled: s.moverIntervalMs > 0,
     moverIntervalMs: s.moverIntervalMs,
     jdApiUrl: s.jdApiUrl,
+    oidcEnabled: oidcEnabled(),
+  })
+})
+
+app.get('/api/events', requireAuth, (c) => {
+  return streamSSE(c, async (stream) => {
+    const write = async (event: string, data: unknown) => {
+      await stream.writeSSE({ event, data: JSON.stringify(data) })
+    }
+    const client = addEventsClient(write)
+    try {
+      await sendEventsSnapshot(write)
+      while (!stream.closed && !stream.aborted) {
+        await stream.writeSSE({ event: 'heartbeat', data: '{}' })
+        await stream.sleep(15_000)
+      }
+    } finally {
+      removeEventsClient(client)
+    }
   })
 })
 
@@ -471,6 +543,64 @@ app.patch('/api/settings', requireAuth, async (c) => {
     return c.json({ settings, restartRequired, basePathForcedByEnv: basePathForcedByEnv() })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'update_failed'
+    return c.json({ error: message }, errorStatus(message))
+  }
+})
+
+app.get('/api/staging', requireAuth, async (c) => {
+  const path = c.req.query('path') ?? ''
+  try {
+    return c.json({ path, entries: await listStaging(path) })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'staging_list_failed'
+    return c.json({ error: message }, errorStatus(message))
+  }
+})
+
+app.delete('/api/staging', requireAuth, async (c) => {
+  const body = (await c.req.json().catch(() => null)) as { path?: string } | null
+  const path = body?.path?.trim() ?? ''
+  if (!path) return c.json({ error: 'path_required' }, 400)
+  try {
+    await deleteStaging(path)
+    recordAudit('staging.delete', path, c.get('username'))
+    return c.json({ ok: true })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'staging_delete_failed'
+    return c.json({ error: message }, errorStatus(message))
+  }
+})
+
+app.get('/api/backup', requireAuth, async (c) => {
+  try {
+    const { path, filename } = await createBackupFile(join(tmpdir(), 'jdweb-backups'))
+    const bytes = await readFileFs(path)
+    void unlink(path).catch(() => undefined)
+    recordAudit('backup.export', filename, c.get('username'))
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'backup_failed'
+    return c.json({ error: message }, 500)
+  }
+})
+
+app.post('/api/backup/restore', requireAuth, async (c) => {
+  try {
+    const form = await c.req.parseBody()
+    const file = form.file
+    if (!file || typeof file === 'string') return c.json({ error: 'file_required' }, 400)
+    const buf = Buffer.from(await file.arrayBuffer())
+    await restoreBackupBytes(buf)
+    recordAudit('backup.restore', null, c.get('username'))
+    return c.json({ ok: true, restartRequired: true })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'restore_failed'
     return c.json({ error: message }, errorStatus(message))
   }
 })
