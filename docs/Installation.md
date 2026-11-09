@@ -45,21 +45,22 @@ Vite UI: `http://127.0.0.1:5173` (proxies `/api` to the server). Do **not** expo
 
 ## Docker
 
+Published image: `ghcr.io/krate-apps/jdweb:0.1.0` (<!-- jdweb-version -->0.1.0<!-- /jdweb-version -->).
+
 ```bash
 cp .env.example .env   # optional; secrets auto-create under the data volume
-docker compose up -d --build
+docker compose up -d
 ```
 
-Mounting `./data` is enough for DB, secrets file, staging, and library. With a path prefix:
+Mounting `./data` is enough for DB, secrets file, staging, and library. The GHCR image is built for `/`. With a path prefix, rebuild locally:
 
 ```bash
-docker compose build --build-arg JDWEB_BASE_PATH=/alice/jdweb
-docker compose up -d
+JDWEB_BASE_PATH=/alice/jdweb docker compose up -d --build
 ```
 
 JDownloader is **not** in the compose file. After start, set the JD API URL in Settings (from the container, often `http://host.docker.internal:3128` or the host gateway — must stay private/loopback per SSRF rules).
 
-Details: [Running](Running).
+Details: [Running](Running), [Releases](Release).
 
 ## Backup
 

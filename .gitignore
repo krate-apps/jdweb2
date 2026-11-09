@@ -13,3 +13,4 @@ data/
 web/dist/
 server/dist/
 .vite/
+.release-version

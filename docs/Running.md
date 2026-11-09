@@ -74,26 +74,29 @@ Adjust paths and ensure `pnpm build` has been run as that user (or deploy prebui
 
 ## Docker
 
+Default: pull the published image `ghcr.io/krate-apps/jdweb:0.1.0` (<!-- jdweb-version -->0.1.0<!-- /jdweb-version -->).
+
 ```bash
 cp .env.example .env   # optional
-docker compose up -d --build
+docker compose up -d
 ```
 
 Compose:
 
-- Builds a multi-stage image (web + server)
+- Uses `image: ghcr.io/krate-apps/jdweb:…` (updated on each release)
 - Sets `JDWEB_HOST=0.0.0.0` inside the container
 - Mounts `./data` → `/data` for SQLite, `secrets.env`, staging, and library dirs
 - Loads `.env` when present (override paths are set to `/data/...`)
 
-Path-prefix build:
+The GHCR image has an empty `JDWEB_BASE_PATH`. For a path prefix, rebuild:
 
 ```bash
-docker compose build --build-arg JDWEB_BASE_PATH=/alice/jdweb
-docker compose up -d
+JDWEB_BASE_PATH=/alice/jdweb docker compose up -d --build
 ```
 
 There is **no** JDownloader container. Keep JD on the host (or elsewhere) and set the JD API URL in Settings after first login (must be a private/loopback URL reachable from the container).
+
+Release automation: [Releases](Release).
 
 ## JDownloader local API
 

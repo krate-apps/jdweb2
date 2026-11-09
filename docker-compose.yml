@@ -1,9 +1,12 @@
 services:
   jdweb:
+    # Published image (root base path). Pin with JDWEB_VERSION or edit the tag.
+    image: ghcr.io/krate-apps/jdweb:0.1.0
+    # Local / path-prefix rebuild: `docker compose up -d --build`
+    # with JDWEB_BASE_PATH set in the environment or .env
     build:
       context: .
       args:
-        # Must match JDWEB_BASE_PATH in .env so Vite embeds /prefix/assets/...
         JDWEB_BASE_PATH: ${JDWEB_BASE_PATH:-}
     ports:
       - "${JDWEB_PORT:-8787}:8787"

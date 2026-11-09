@@ -12,6 +12,7 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 - [Destinations and library mover](Destinations-and-library-mover)
 - [Webhooks](Webhooks)
 - [API overview](API)
+- [Releases](Release)
 - [Troubleshooting](Troubleshooting)
 
 ## Architecture

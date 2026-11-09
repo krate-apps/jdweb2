@@ -38,13 +38,14 @@ Secrets are written to `data/secrets.env` on first boot if missing. Open the UI 
 | Production UI/API | http://127.0.0.1:8787 |
 | Dev (`pnpm dev`) | UI http://127.0.0.1:5173 · API :8787 |
 
-**Docker**
+**Docker** (published image <!-- jdweb-version -->0.1.0<!-- /jdweb-version -->)
 
 ```bash
-docker compose up -d --build
+docker compose up -d
+# pulls ghcr.io/krate-apps/jdweb:0.1.0
 ```
 
-Behind TLS or a path prefix (`/alice/jdweb`, `/trevor/jdweb`, …), see **[docs/Reverse-proxy.md](docs/Reverse-proxy.md)** (Caddy, nginx, Apache). Rebuild after changing `JDWEB_BASE_PATH`.
+Path prefix or local rebuild: `JDWEB_BASE_PATH=/alice/jdweb docker compose up -d --build`. See **[docs/Reverse-proxy.md](docs/Reverse-proxy.md)** and **[docs/Release.md](docs/Release.md)**.
 
 ## Features
 
@@ -65,6 +66,7 @@ Behind TLS or a path prefix (`/alice/jdweb`, `/trevor/jdweb`, …), see **[docs/
 | [Installation](docs/Installation.md) | Clone, env, Docker |
 | [Configuration](docs/Configuration.md) | Environment variables |
 | [Running](docs/Running.md) | Dev, production, systemd |
+| [Releases](docs/Release.md) | semantic-release + GHCR |
 | [Reverse proxy](docs/Reverse-proxy.md) | Caddy · nginx · Apache |
 | [Authentication](docs/Authentication.md) | Users, sessions, data key |
 | [Destinations & mover](docs/Destinations-and-library-mover.md) | Staging → library |
