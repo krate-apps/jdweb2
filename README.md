@@ -1,61 +1,96 @@
 # jdweb
 
-Self-hosted web companion for [JDownloader 2](https://jdownloader.org/).
+**Self-hosted web UI for [JDownloader 2](https://jdownloader.org/).**
 
-jdweb serves a Vue interface and a small authenticated API that talks to JDownloader’s local HTTP API on your machine. The browser never calls JDownloader directly.
+A Vue front end and a small authenticated Node API that talk to JDownloader’s **local** HTTP API on your machine. The browser never reaches JDownloader directly.
 
-## Documentation
+<p align="center">
+  <img src="web/public/favicon.svg" width="72" height="72" alt="jdweb icon" />
+</p>
 
-English documentation lives in [`docs/`](docs/) and is published to the [project Wiki](https://github.com/krate-apps/jdweb/wiki):
-
-| Page | Topic |
-|------|--------|
-| [Home](docs/Home.md) | Overview, architecture, features |
-| [Installation](docs/Installation.md) | Clone, env, build, Docker |
-| [Configuration](docs/Configuration.md) | Environment variables |
-| [Running](docs/Running.md) | Dev, production, systemd, metrics |
-| [Reverse proxy](docs/Reverse-proxy.md) | **Caddy, nginx, Apache** examples |
-| [Authentication](docs/Authentication.md) | Users, sessions, hosters, data key |
-| [Destinations and library mover](docs/Destinations-and-library-mover.md) | Staging → library |
-| [Webhooks](docs/Webhooks.md) | HTTP notifications |
-| [API](docs/API.md) | Endpoint overview |
-| [Troubleshooting](docs/Troubleshooting.md) | MIME/base path, JD, mover |
-
-After creating the first Wiki page once in the GitHub UI (so the `jdweb.wiki` remote exists), sync with:
-
-```bash
-./scripts/publish-docs.sh
+```text
+Browser ──HTTPS──▶ reverse proxy ──HTTP──▶ jdweb (:8787)
+                                              ├── SQLite (users, sessions, hosters, moves)
+                                              └── HTTP ──▶ JDownloader local API
 ```
+
+## Why jdweb
+
+| | |
+|---|---|
+| **Own your auth** | Multi-user SQLite login (argon2id), server-side sessions, encrypted hoster secrets |
+| **Safer surface** | JD stays on localhost; only jdweb is exposed behind your proxy |
+| **Library-aware** | Staging → movies / series / other mover, suggestions, history |
+| **Ops-friendly** | Docker, webhooks, JSON logs, metrics, path-prefix installs |
 
 ## Quick start
 
-Local development:
+**Requirements:** Node.js 20+, pnpm 9, JDownloader with the local HTTP API enabled.
 
 ```bash
 pnpm install
 cp .env.example .env
+# Set JDWEB_SESSION_SECRET, JDWEB_DATA_KEY, JD_API_URL (and JDWEB_BASE_PATH if needed)
 pnpm dev
 ```
 
-Open `http://127.0.0.1:5173/` (Vite). The API listens on port `8787`.
+| | URL |
+|---|-----|
+| UI (Vite) | http://127.0.0.1:5173 |
+| API | http://127.0.0.1:8787 |
 
-Production (or a remote server):
+**Production**
 
 ```bash
-# In .env: secrets, JD_API_URL, and JDWEB_HOST=127.0.0.1 behind a proxy
-# (or 0.0.0.0 if you expose Node directly)
 pnpm install && pnpm build && pnpm start
 ```
 
-Then open `http://YOUR_SERVER_IP:8787/` (plus `JDWEB_BASE_PATH` if set). For HTTPS and path prefixes, use a reverse proxy — see [docs/Reverse-proxy.md](docs/Reverse-proxy.md) for Caddy, nginx, and Apache.
-
-Docker:
+**Docker**
 
 ```bash
 cp .env.example .env
 docker compose up -d --build
 ```
 
+Behind TLS or a path prefix (`/alice/jdweb`, `/trevor/jdweb`, …), see **[docs/Reverse-proxy.md](docs/Reverse-proxy.md)** (Caddy, nginx, Apache). Rebuild after changing `JDWEB_BASE_PATH`.
+
+## Features
+
+- Download list with filters, cleanup, and rich context menus
+- Link grabber + `.dlc` / `.ccf` / `.rsdf` containers and crawler progress
+- Premium hoster accounts in SQLite (import from JD, edit passwords, resync)
+- Speed limit, connection caps, archive passwords
+- Automatic & manual library mover with history
+- HTTP webhooks (`download.finished`, `mover.succeeded`, `mover.failed`)
+- English / French UI, dark & light themes
+- Structured logs and `GET /api/metrics`
+
+## Documentation
+
+| Guide | |
+|-------|---|
+| [Home](docs/Home.md) | Overview & architecture |
+| [Installation](docs/Installation.md) | Clone, env, Docker |
+| [Configuration](docs/Configuration.md) | Environment variables |
+| [Running](docs/Running.md) | Dev, production, systemd |
+| [Reverse proxy](docs/Reverse-proxy.md) | Caddy · nginx · Apache |
+| [Authentication](docs/Authentication.md) | Users, sessions, data key |
+| [Destinations & mover](docs/Destinations-and-library-mover.md) | Staging → library |
+| [Webhooks](docs/Webhooks.md) | HTTP notifications |
+| [API](docs/API.md) | Endpoint map |
+| [Troubleshooting](docs/Troubleshooting.md) | MIME, JD port, mover |
+
+Publish to the GitHub Wiki:
+
+```bash
+pnpm docs:publish
+```
+
+## Stack
+
+- **web** — Vue 3, Vite, Pinia, vue-i18n, Tailwind 4  
+- **server** — Hono, `node:sqlite`, argon2id, AES-256-GCM  
+
 ## License
 
-UNLICENSE (see `LICENSE`).
+[UNLICENSE](LICENSE) — public domain dedication.
