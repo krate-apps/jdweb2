@@ -10,6 +10,7 @@ import { setLocale } from '@/i18n'
 import { CONTAINER_EXTENSIONS, getDialog, listDialogs } from '@/api/jd'
 import AddLinksModal from '@/components/modals/AddLinksModal.vue'
 import PasswordModal from '@/components/modals/PasswordModal.vue'
+import BrandMark from '@/components/ui/BrandMark.vue'
 import ToastNotification from '@/components/ui/ToastNotification.vue'
 
 const { t, locale } = useI18n()
@@ -138,7 +139,9 @@ async function onLogout() {
 <template>
   <div class="min-h-screen flex flex-col bg-background text-foreground">
     <header class="border-b border-border bg-surface px-3 py-2 flex flex-wrap items-center gap-2">
-      <div class="font-semibold text-accent-text mr-2">{{ t('app.name') }}</div>
+      <RouterLink :to="{ name: 'downloads' }" class="mr-2 inline-flex items-center" :title="t('app.name')">
+        <BrandMark :size="22" />
+      </RouterLink>
       <nav class="flex flex-wrap gap-1 text-sm">
         <RouterLink
           v-for="item in [

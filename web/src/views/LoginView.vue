@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { setLocale } from '@/i18n'
 import { ApiError } from '@/api/http'
+import BrandMark from '@/components/ui/BrandMark.vue'
 
 const { t, locale } = useI18n()
 const auth = useAuthStore()
@@ -39,8 +40,10 @@ async function submit() {
       class="w-full max-w-sm rounded-[14px] border border-border bg-surface p-6 space-y-4 shadow-lg"
       @submit.prevent="submit"
     >
-      <div class="space-y-1">
-        <h1 class="text-xl font-semibold text-accent-text">{{ t('app.name') }}</h1>
+      <div class="space-y-2">
+        <h1 class="text-xl">
+          <BrandMark :size="28" />
+        </h1>
         <p class="text-sm text-muted">{{ t('login.title') }}</p>
       </div>
 
