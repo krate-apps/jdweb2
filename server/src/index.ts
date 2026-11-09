@@ -157,6 +157,7 @@ app.get('/api/health', async (c) => {
   }
   return c.json({
     ok: true,
+    version: config.version,
     basePath: settings.basePath || '/',
     mover: settings.moverIntervalMs > 0,
     needsSetup: countUsers() === 0,
@@ -419,6 +420,7 @@ app.post('/api/hosters/:id/resync', requireAuth, async (c) => {
 app.get('/api/config/public', requireAuth, (c) => {
   const s = getAppSettings()
   return c.json({
+    version: config.version,
     basePath: s.basePath || '/',
     basePathForcedByEnv: basePathForcedByEnv(),
     stagingDir: s.stagingDir,

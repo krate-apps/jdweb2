@@ -9,6 +9,7 @@ import { formatSize, formatSpeed } from '@/lib/format'
 import { setLocale } from '@/i18n'
 import { CONTAINER_EXTENSIONS, getDialog, listDialogs } from '@/api/jd'
 import AddLinksModal from '@/components/modals/AddLinksModal.vue'
+import AboutModal from '@/components/modals/AboutModal.vue'
 import PasswordModal from '@/components/modals/PasswordModal.vue'
 import BrandMark from '@/components/ui/BrandMark.vue'
 import ToastNotification from '@/components/ui/ToastNotification.vue'
@@ -139,9 +140,14 @@ async function onLogout() {
 <template>
   <div class="min-h-screen flex flex-col bg-background text-foreground">
     <header class="border-b border-border bg-surface px-3 py-2 flex flex-wrap items-center gap-2">
-      <RouterLink :to="{ name: 'downloads' }" class="mr-2 inline-flex items-center" :title="t('app.name')">
+      <button
+        type="button"
+        class="mr-2 inline-flex items-center rounded-[10px] hover:opacity-90"
+        :title="t('about.open')"
+        @click="app.showAbout = true"
+      >
         <BrandMark :size="22" />
-      </RouterLink>
+      </button>
       <nav class="flex flex-wrap gap-1 text-sm">
         <RouterLink
           v-for="item in [
@@ -289,6 +295,7 @@ async function onLogout() {
     </footer>
 
     <AddLinksModal v-if="app.showAddLinks" @close="app.showAddLinks = false" />
+    <AboutModal v-if="app.showAbout" @close="app.showAbout = false" />
     <PasswordModal
       v-if="passwordDialogId != null"
       :dialog-id="passwordDialogId"

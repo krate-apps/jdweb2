@@ -4,6 +4,16 @@ export default {
     connected: 'Connecté',
     disconnected: 'Déconnecté',
   },
+  about: {
+    open: 'À propos de jdweb',
+    title: 'jdweb',
+    tagline: 'Companion auto-hébergé pour JDownloader 2',
+    blurb: 'UI Vue et API Node authentifiée. Le navigateur ne parle jamais à JDownloader directement.',
+    version: 'jdweb',
+    jdownloader: 'API JDownloader',
+    license: 'Licence',
+    github: 'GitHub',
+  },
   nav: {
     downloads: 'Téléchargements',
     grabber: 'Collecteur de liens',

@@ -1,10 +1,19 @@
 import { config as loadEnv } from 'dotenv'
 import { createHash, randomBytes } from 'node:crypto'
-import { existsSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const projectRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
+
+function readPackageVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(resolve(projectRoot, 'package.json'), 'utf8')) as { version?: string }
+    return pkg.version?.trim() || '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
 
 const rootEnvPath = resolve(projectRoot, '.env')
 const secretsEnvPath = resolve(projectRoot, 'data/secrets.env')
@@ -100,6 +109,7 @@ function resolvePreviousDataKey(): Buffer | null {
 const dataKeyResolved = resolveDataKey()
 
 export const config = {
+  version: readPackageVersion(),
   host: env('JDWEB_HOST', '127.0.0.1'),
   port: envInt('JDWEB_PORT', 8787),
   basePath: normalizeBasePath(env('JDWEB_BASE_PATH', '')),

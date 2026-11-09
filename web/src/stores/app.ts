@@ -9,6 +9,7 @@ export const useAppStore = defineStore('app', () => {
   const theme = ref<Theme>(resolveTheme())
   const pollInterval = ref(Number(localStorage.getItem('jdweb.poll') ?? 2000))
   const showAddLinks = ref(false)
+  const showAbout = ref(false)
   /** Container files dropped on the window, picked up by the Add links dialog. */
   const droppedFiles = ref<File[]>([])
   /** Global download speed limit in bytes/s; 0 = unlimited. */
@@ -17,6 +18,8 @@ export const useAppStore = defineStore('app', () => {
   const toasts = ref<{ id: number; message: string }[]>([])
   let toastSeq = 0
   const publicConfig = ref<{
+    version?: string
+    basePath?: string
     stagingDir: string
     moviesDir: string
     showsDir: string
@@ -96,6 +99,7 @@ export const useAppStore = defineStore('app', () => {
     theme,
     pollInterval,
     showAddLinks,
+    showAbout,
     droppedFiles,
     speedLimit,
     showCompletionToasts,
