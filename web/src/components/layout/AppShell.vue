@@ -163,8 +163,8 @@ async function onLogout() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-background text-foreground">
-    <header class="sticky top-0 z-40 border-b border-border/80 bg-surface/95 backdrop-blur-md px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-2">
+  <div class="min-h-screen flex flex-col text-foreground">
+    <header class="sticky top-0 z-40 border-b border-border/70 bg-surface/80 backdrop-blur-xl px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-2 shadow-[0_1px_0_rgba(255,255,255,0.04)]">
       <RouterLink
         :to="{ name: 'downloads' }"
         class="mr-1 inline-flex items-center rounded-[10px] outline-offset-2"
@@ -178,8 +178,8 @@ async function onLogout() {
           v-for="item in navItems"
           :key="item.name"
           :to="{ name: item.name }"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] text-muted hover:bg-surface-2 hover:text-foreground transition-colors"
-          active-class="!bg-surface-3 !text-foreground !font-medium"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[12px] text-muted hover:bg-surface-2/80 hover:text-foreground transition-colors"
+          active-class="!bg-primary/15 !text-accent-text !font-medium !shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--jd-primary)_35%,transparent)]"
         >
           <component :is="item.icon" class="size-3.5 shrink-0 opacity-80" aria-hidden="true" />
           <span>{{ item.label }}</span>
@@ -236,10 +236,10 @@ async function onLogout() {
       </div>
     </header>
 
-    <div class="relative border-b border-border bg-surface-2/90 px-3 sm:px-4 py-2 flex flex-wrap gap-1.5 items-center text-sm">
+    <div class="relative border-b border-border/70 bg-surface-2/55 backdrop-blur-md px-3 sm:px-4 py-2 flex flex-wrap gap-1.5 items-center text-sm">
       <button
         type="button"
-        class="inline-flex items-center justify-center size-8 rounded-[10px] bg-primary text-primary-fg"
+        class="inline-flex items-center justify-center size-8 rounded-[12px] bg-primary text-primary-fg shadow-[0_8px_20px_var(--jd-glow)]"
         :title="downloads.engineStopped ? t('downloads.startEngine') : t('downloads.stopEngine')"
         @click="downloads.engineStopped ? downloads.startEngine() : downloads.stopEngine()"
       >
@@ -309,7 +309,7 @@ async function onLogout() {
       </button>
       <div
         v-if="showSpeedPopover"
-        class="absolute top-full left-3 z-50 mt-1 min-w-52 rounded-[14px] border border-border bg-surface p-3 shadow-lg"
+        class="jd-panel absolute top-full left-3 z-50 mt-1 min-w-52 rounded-[16px] p-3"
         @click.stop
       >
         <div class="text-xs font-semibold mb-2">{{ t('downloads.speedLimitTitle') }}</div>
@@ -355,7 +355,7 @@ async function onLogout() {
       <RouterView />
     </main>
 
-    <footer class="border-t border-border bg-surface px-3 sm:px-4 py-2 text-xs text-muted flex flex-wrap gap-x-4 gap-y-1 items-center">
+    <footer class="border-t border-border/70 bg-surface/75 backdrop-blur-md px-3 sm:px-4 py-2 text-xs text-muted flex flex-wrap gap-x-4 gap-y-1 items-center">
       <span>{{ t('downloads.packages') }}: {{ downloads.packages.length }}</span>
       <span>{{ t('downloads.links') }}: {{ downloads.links.length }}</span>
       <span>{{ t('downloads.speed') }}: {{ formatSpeed(downloads.totalSpeed) }}</span>

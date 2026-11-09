@@ -357,10 +357,10 @@ async function removePassword(value: string) {
 </script>
 
 <template>
-  <div class="p-4 md:p-5 max-w-5xl mx-auto space-y-4">
+  <div class="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
     <header class="space-y-1">
-      <h1 class="text-xl font-semibold tracking-tight">{{ t('settings.title') }}</h1>
-      <p class="text-sm text-muted">{{ t('settings.subtitle') }}</p>
+      <h1 class="text-2xl font-semibold tracking-tight">{{ t('settings.title') }}</h1>
+      <p class="text-sm text-muted leading-relaxed">{{ t('settings.subtitle') }}</p>
       <p v-if="error" class="text-sm text-danger-text">{{ error }}</p>
     </header>
 
@@ -389,7 +389,7 @@ async function removePassword(value: string) {
       <div class="min-w-0 flex-1 space-y-4">
         <!-- Connection / library -->
         <template v-if="section === 'connection'">
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-4">
+          <section class="jd-panel rounded-[16px] p-4 space-y-4">
             <div class="flex flex-wrap items-start gap-2">
               <div class="mr-auto space-y-0.5">
                 <h2 class="text-sm font-semibold">{{ t('settings.appSettings') }}</h2>
@@ -506,7 +506,7 @@ async function removePassword(value: string) {
             </div>
           </section>
 
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <h2 class="text-sm font-semibold">{{ t('settings.moveHistory') }}</h2>
             <p v-if="moveEvents.length === 0" class="text-xs text-muted">{{ t('settings.moveHistoryEmpty') }}</p>
             <ul v-else class="divide-y divide-border -mx-1">
@@ -534,7 +534,7 @@ async function removePassword(value: string) {
 
         <!-- Downloads -->
         <template v-else-if="section === 'downloads'">
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-4">
+          <section class="jd-panel rounded-[16px] p-4 space-y-4">
             <h2 class="text-sm font-semibold">{{ t('settings.polling') }}</h2>
             <label class="flex flex-wrap items-center gap-3">
               <input
@@ -550,7 +550,7 @@ async function removePassword(value: string) {
             </label>
           </section>
 
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <h2 class="text-sm font-semibold">{{ t('settings.limits') }}</h2>
             <div class="grid sm:grid-cols-3 gap-3">
               <label class="rounded-[10px] bg-surface-2 px-3 py-2.5 space-y-1.5">
@@ -589,7 +589,7 @@ async function removePassword(value: string) {
             </div>
           </section>
 
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <h2 class="text-sm font-semibold">{{ t('settings.passwords') }}</h2>
             <ul v-if="passwords.length" class="space-y-1.5">
               <li
@@ -624,7 +624,7 @@ async function removePassword(value: string) {
 
         <!-- Account -->
         <template v-else-if="section === 'account'">
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <h2 class="text-sm font-semibold">{{ t('settings.myPassword') }}</h2>
             <form class="grid sm:grid-cols-[1fr_1fr_auto] gap-2" @submit.prevent="changeMyPassword">
               <input
@@ -649,7 +649,7 @@ async function removePassword(value: string) {
             <p v-if="myPasswordMsg" class="text-xs text-muted">{{ myPasswordMsg }}</p>
           </section>
 
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <div class="flex items-center gap-2">
               <h2 class="text-sm font-semibold mr-auto">{{ t('settings.sessions') }}</h2>
               <button
@@ -690,7 +690,7 @@ async function removePassword(value: string) {
 
         <!-- Users -->
         <template v-else-if="section === 'users'">
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <h2 class="text-sm font-semibold">{{ t('settings.users') }}</h2>
             <p v-if="userError" class="text-xs text-danger-text">{{ userError }}</p>
             <ul class="space-y-1.5">
@@ -729,7 +729,7 @@ async function removePassword(value: string) {
 
         <!-- Notifications -->
         <template v-else-if="section === 'notifications'">
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <h2 class="text-sm font-semibold">{{ t('settings.notifications') }}</h2>
             <label class="flex items-center gap-2.5 text-sm rounded-[10px] bg-surface-2 px-3 py-2.5 cursor-pointer">
               <input
@@ -742,7 +742,7 @@ async function removePassword(value: string) {
             </label>
           </section>
 
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <div class="space-y-0.5">
               <h2 class="text-sm font-semibold">{{ t('settings.webhooks') }}</h2>
               <p class="text-xs text-muted">{{ t('settings.webhooksHint') }}</p>
@@ -788,7 +788,7 @@ async function removePassword(value: string) {
 
         <!-- Appearance -->
         <template v-else>
-          <section class="rounded-[14px] border border-border bg-surface p-4 space-y-3">
+          <section class="jd-panel rounded-[16px] p-4 space-y-3">
             <h2 class="text-sm font-semibold">{{ t('settings.appearance') }}</h2>
             <div class="grid sm:grid-cols-2 gap-3">
               <label class="block space-y-1.5">
