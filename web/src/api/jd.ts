@@ -15,6 +15,8 @@ export interface DownloadLink {
   finished?: boolean
 }
 
+export type ExtractionState = 'none' | 'extracting' | 'ok' | 'failed' | 'needPassword'
+
 export interface PackageInfo {
   uuid: number
   name: string
@@ -28,6 +30,18 @@ export interface PackageInfo {
   hosts?: string[]
   speed?: number
   eta?: number
+  /** Derived client-side / optional from SSE. */
+  extraction?: ExtractionState
+}
+
+export function extractionStateFromStatus(status?: string, finished?: boolean): ExtractionState {
+  if (!status) return 'none'
+  if (/password|wrong pass|crc/i.test(status)) return 'needPassword'
+  if (/extract.*(fail|error)|unpack.*(fail|error)|archive.*(fail|error)/i.test(status)) return 'failed'
+  if (/extracting|unpacking|extract\b|unpack\b/i.test(status)) {
+    return finished ? 'ok' : 'extracting'
+  }
+  return 'none'
 }
 
 export interface GrabberLink {
