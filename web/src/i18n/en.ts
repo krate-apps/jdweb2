@@ -134,6 +134,9 @@ export default {
     other: 'Other library',
     moverOn: 'Automatic library mover is enabled',
     moverOff: 'Automatic library mover is disabled',
+    notifications: 'Notifications',
+    completionToasts: 'Show a toast when a package finishes',
+    downloadComplete: 'Download finished: {name}',
   },
   password: {
     title: 'Archive password',

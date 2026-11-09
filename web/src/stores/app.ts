@@ -11,6 +11,9 @@ export const useAppStore = defineStore('app', () => {
   const showAddLinks = ref(false)
   /** Global download speed limit in bytes/s; 0 = unlimited. */
   const speedLimit = ref(0)
+  const showCompletionToasts = ref(localStorage.getItem('jdweb.toasts') !== 'false')
+  const toasts = ref<{ id: number; message: string }[]>([])
+  let toastSeq = 0
   const publicConfig = ref<{
     stagingDir: string
     moviesDir: string
@@ -63,12 +66,29 @@ export const useAppStore = defineStore('app', () => {
     speedLimit.value = value
   }
 
+  function watchCompletionToasts() {
+    localStorage.setItem('jdweb.toasts', String(showCompletionToasts.value))
+  }
+
+  function addToast(message: string) {
+    const id = ++toastSeq
+    toasts.value.push({ id, message })
+    setTimeout(() => dismissToast(id), 5000)
+  }
+
+  function dismissToast(id: number) {
+    const idx = toasts.value.findIndex((t) => t.id === id)
+    if (idx !== -1) toasts.value.splice(idx, 1)
+  }
+
   return {
     connected,
     theme,
     pollInterval,
     showAddLinks,
     speedLimit,
+    showCompletionToasts,
+    toasts,
     publicConfig,
     checkConnection,
     setTheme,
@@ -77,5 +97,8 @@ export const useAppStore = defineStore('app', () => {
     loadPublicConfig,
     fetchSpeedLimit,
     applySpeedLimit,
+    watchCompletionToasts,
+    addToast,
+    dismissToast,
   }
 })

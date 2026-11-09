@@ -86,6 +86,18 @@ async function removePassword(value: string) {
     <p v-if="error" class="text-sm text-danger-text">{{ error }}</p>
 
     <section class="space-y-2">
+      <h2 class="text-sm font-semibold text-muted">{{ t('settings.notifications') }}</h2>
+      <label class="flex items-center gap-2 text-sm">
+        <input
+          v-model="app.showCompletionToasts"
+          type="checkbox"
+          @change="app.watchCompletionToasts()"
+        />
+        {{ t('settings.completionToasts') }}
+      </label>
+    </section>
+
+    <section class="space-y-2">
       <h2 class="text-sm font-semibold text-muted">{{ t('settings.appearance') }}</h2>
       <div class="flex gap-2">
         <select

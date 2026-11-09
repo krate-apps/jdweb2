@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { DownloadLink, PackageInfo } from '@/api/jd'
 import * as jd from '@/api/jd'
+import { i18n } from '@/i18n'
 import { useAppStore } from './app'
 
 export const useDownloadsStore = defineStore('downloads', () => {
@@ -27,6 +28,8 @@ export const useDownloadsStore = defineStore('downloads', () => {
   }
 
   async function refresh() {
+    const app = useAppStore()
+    const prevFinished = new Set(packages.value.filter((p) => p.finished).map((p) => p.uuid))
     const [l, p, state] = await Promise.all([
       jd.queryLinks(),
       jd.queryPackages(),
@@ -35,7 +38,14 @@ export const useDownloadsStore = defineStore('downloads', () => {
     links.value = l ?? []
     packages.value = p ?? []
     engineState.value = state ?? 'UNKNOWN'
-    useAppStore().connected = true
+    app.connected = true
+    if (app.showCompletionToasts) {
+      for (const pkg of packages.value) {
+        if (pkg.finished && !prevFinished.has(pkg.uuid)) {
+          app.addToast(i18n.global.t('settings.downloadComplete', { name: pkg.name }))
+        }
+      }
+    }
   }
 
   function startPolling() {

@@ -134,6 +134,9 @@ export default {
     other: 'Bibliothèque autre',
     moverOn: 'Le déplacement automatique vers la bibliothèque est activé',
     moverOff: 'Le déplacement automatique vers la bibliothèque est désactivé',
+    notifications: 'Notifications',
+    completionToasts: 'Afficher une notification quand un paquet se termine',
+    downloadComplete: 'Téléchargement terminé : {name}',
   },
   password: {
     title: 'Mot de passe d’archive',

@@ -10,6 +10,7 @@ import { setLocale } from '@/i18n'
 import { getDialog, listDialogs } from '@/api/jd'
 import AddLinksModal from '@/components/modals/AddLinksModal.vue'
 import PasswordModal from '@/components/modals/PasswordModal.vue'
+import ToastNotification from '@/components/ui/ToastNotification.vue'
 
 const { t, locale } = useI18n()
 const auth = useAuthStore()
@@ -226,5 +227,6 @@ async function onLogout() {
       :dialog-id="passwordDialogId"
       @close="passwordDialogId = null"
     />
+    <ToastNotification />
   </div>
 </template>
