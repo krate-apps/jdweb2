@@ -1,0 +1,18 @@
+services:
+  jdweb:
+    build: .
+    ports:
+      - "${JDWEB_PORT:-8787}:8787"
+    env_file:
+      - .env
+    environment:
+      JDWEB_HOST: 0.0.0.0
+      JDWEB_PORT: 8787
+      JDWEB_DB_PATH: /data/jdweb.sqlite
+      JDWEB_STAGING_DIR: /data/staging
+      JDWEB_MOVIES_DIR: /data/library/movies
+      JDWEB_SHOWS_DIR: /data/library/shows
+      JDWEB_OTHER_DIR: /data/library/other
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

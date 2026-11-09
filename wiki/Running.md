@@ -46,6 +46,18 @@ Allow the port in the host firewall (for example `ufw allow 8787/tcp`).
 
 jdweb serves plain HTTP. For `https://…`, put a reverse proxy (Caddy, nginx, …) in front with TLS certificates, and proxy to `http://127.0.0.1:8787`. See [Reverse proxy](Reverse-proxy).
 
+## Docker
+
+Build and run with Compose (JDownloader stays outside the container; set `JD_API_URL` to reach it from the container network):
+
+```bash
+cp .env.example .env
+# Edit secrets, JD_API_URL, library paths as needed
+docker compose up -d --build
+```
+
+The image is a multi-stage Node build (web + server). Compose mounts `./data` for SQLite, staging, and library folders, binds `JDWEB_HOST=0.0.0.0`, and loads `.env`. There is no JDownloader container — only jdweb.
+
 ## JDownloader local API
 
 Enable JDownloader’s local HTTP API and point `JD_API_URL` at it. Typical settings:
