@@ -46,8 +46,8 @@ onMounted(async () => {
       aria-labelledby="about-title"
       class="jd-panel w-full max-w-sm rounded-[16px] p-6 space-y-5"
     >
-      <div class="flex items-start gap-3">
-        <BrandMark :size="40" />
+      <div class="flex items-center gap-3">
+        <BrandMark :size="40" :show-name="false" />
         <div class="min-w-0 space-y-0.5">
           <h2 id="about-title" class="text-xl font-semibold tracking-tight">{{ t('about.title') }}</h2>
           <p class="text-sm text-muted leading-relaxed">{{ t('about.tagline') }}</p>
