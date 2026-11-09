@@ -2,16 +2,48 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDownloadsStore } from '@/stores/downloads'
+import type { PackageInfo } from '@/api/jd'
 import { formatEta, formatSize, formatSpeed } from '@/lib/format'
 import MoveModal from '@/components/modals/MoveModal.vue'
 import PasswordModal from '@/components/modals/PasswordModal.vue'
 import ContextMenu, { type ContextMenuItem } from '@/components/ui/ContextMenu.vue'
+
+type Filter = 'all' | 'running' | 'finished' | 'error'
+type SortKey = 'name' | 'size' | 'eta'
 
 const { t } = useI18n()
 const downloads = useDownloadsStore()
 const expanded = ref<Set<number>>(new Set())
 const moveTarget = ref<{ uuid: number; saveTo?: string } | null>(null)
 const passwordTarget = ref<number | null>(null)
+const filter = ref<Filter>('all')
+const sortKey = ref<SortKey>('name')
+
+function packageMatches(pkg: PackageInfo): boolean {
+  if (filter.value === 'all') return true
+  if (filter.value === 'finished') return Boolean(pkg.finished)
+  if (filter.value === 'running') {
+    if (pkg.finished) return false
+    if ((pkg.speed ?? 0) > 0) return true
+    return downloads.linksForPackage(pkg.uuid).some((l) => l.running)
+  }
+  return Boolean(pkg.status && /error|offline|failed/i.test(pkg.status))
+}
+
+const visiblePackages = computed(() => {
+  const list = downloads.packages.filter(packageMatches)
+  const sorted = [...list]
+  sorted.sort((a, b) => {
+    if (sortKey.value === 'size') return (b.bytesTotal ?? 0) - (a.bytesTotal ?? 0)
+    if (sortKey.value === 'eta') {
+      const ae = a.eta == null || a.eta < 0 ? Number.POSITIVE_INFINITY : a.eta
+      const be = b.eta == null || b.eta < 0 ? Number.POSITIVE_INFINITY : b.eta
+      return ae - be
+    }
+    return (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' })
+  })
+  return sorted
+})
 
 const menu = ref<{
   visible: boolean
@@ -107,6 +139,21 @@ async function onMenuSelect(action: string) {
 
 <template>
   <div class="p-3 overflow-x-auto" @click="hideMenu">
+    <div class="flex flex-wrap gap-2 items-center mb-3 text-sm">
+      <label class="text-xs text-muted">{{ t('downloads.filter') }}</label>
+      <select v-model="filter" class="bg-input border border-border rounded-[10px] px-2 py-1 text-sm">
+        <option value="all">{{ t('downloads.filterAll') }}</option>
+        <option value="running">{{ t('downloads.filterRunning') }}</option>
+        <option value="finished">{{ t('downloads.filterFinished') }}</option>
+        <option value="error">{{ t('downloads.filterError') }}</option>
+      </select>
+      <label class="text-xs text-muted ml-2">{{ t('downloads.sort') }}</label>
+      <select v-model="sortKey" class="bg-input border border-border rounded-[10px] px-2 py-1 text-sm">
+        <option value="name">{{ t('downloads.name') }}</option>
+        <option value="size">{{ t('downloads.size') }}</option>
+        <option value="eta">{{ t('downloads.eta') }}</option>
+      </select>
+    </div>
     <table class="w-full text-sm border-collapse min-w-[720px]">
       <thead>
         <tr class="text-left text-xs text-muted border-b border-border">
@@ -123,7 +170,7 @@ async function onMenuSelect(action: string) {
         </tr>
       </thead>
       <tbody>
-        <template v-for="pkg in downloads.packages" :key="pkg.uuid">
+        <template v-for="pkg in visiblePackages" :key="pkg.uuid">
           <tr
             class="border-b border-border/60 hover:bg-surface-2/60"
             @contextmenu.prevent="showMenu($event, 'package', pkg.uuid)"
@@ -198,7 +245,7 @@ async function onMenuSelect(action: string) {
       </tbody>
     </table>
 
-    <p v-if="!downloads.packages.length" class="text-sm text-muted p-6 text-center">{{ t('common.empty') }}</p>
+    <p v-if="!visiblePackages.length" class="text-sm text-muted p-6 text-center">{{ t('common.empty') }}</p>
 
     <div v-if="downloads.selected.size" class="fixed bottom-12 left-1/2 -translate-x-1/2 flex gap-2 bg-surface border border-border rounded-[14px] px-3 py-2 shadow-lg text-sm">
       <button type="button" class="px-2 py-1 rounded-[10px] bg-primary text-primary-fg" @click="downloads.forceSelected()">

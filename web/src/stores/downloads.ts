@@ -110,6 +110,16 @@ export const useDownloadsStore = defineStore('downloads', () => {
     await refresh()
   }
 
+  async function cleanFailed() {
+    await jd.cleanupFailed()
+    await refresh()
+  }
+
+  async function cleanOffline() {
+    await jd.cleanupOffline()
+    await refresh()
+  }
+
   async function removeSelected() {
     const ids = [...selected.value]
     if (!ids.length) return
@@ -164,6 +174,8 @@ export const useDownloadsStore = defineStore('downloads', () => {
     pauseAll,
     resumeAll,
     cleanFinished,
+    cleanFailed,
+    cleanOffline,
     removeSelected,
     forceSelected,
     forceLinks,

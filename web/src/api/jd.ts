@@ -115,15 +115,20 @@ export function forceDownload(linkIds: number[]) {
   return jdCall('/downloadsV2/forceDownload', linkIds, [])
 }
 
+function cleanup(action: 'DELETE_FINISHED' | 'DELETE_FAILED' | 'DELETE_OFFLINE') {
+  return jdCall('/downloadsV2/cleanup', action, 'REMOVE_LINKS_ONLY', 'ALL', [], [])
+}
+
 export function cleanupFinished() {
-  return jdCall(
-    '/downloadsV2/cleanup',
-    'DELETE_FINISHED',
-    'REMOVE_LINKS_ONLY',
-    'ALL',
-    [],
-    [],
-  )
+  return cleanup('DELETE_FINISHED')
+}
+
+export function cleanupFailed() {
+  return cleanup('DELETE_FAILED')
+}
+
+export function cleanupOffline() {
+  return cleanup('DELETE_OFFLINE')
 }
 
 export function queryGrabberLinks() {

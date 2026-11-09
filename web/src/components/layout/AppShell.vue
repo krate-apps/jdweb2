@@ -209,6 +209,12 @@ async function onLogout() {
       <button type="button" class="px-2 py-1 rounded-[10px] bg-surface border border-border" @click="downloads.cleanFinished()">
         {{ t('downloads.cleanFinished') }}
       </button>
+      <button type="button" class="px-2 py-1 rounded-[10px] bg-surface border border-border" @click="downloads.cleanFailed()">
+        {{ t('downloads.cleanFailed') }}
+      </button>
+      <button type="button" class="px-2 py-1 rounded-[10px] bg-surface border border-border" @click="downloads.cleanOffline()">
+        {{ t('downloads.cleanOffline') }}
+      </button>
       <button
         type="button"
         class="px-2 py-1 rounded-[10px] bg-accent text-primary-fg"
