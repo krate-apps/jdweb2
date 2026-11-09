@@ -23,6 +23,7 @@ export default {
   },
   login: {
     title: 'Sign in to jdweb',
+    hint: 'Manage downloads through your local JDownloader — safely behind your own login.',
     username: 'Username',
     password: 'Password',
     submit: 'Sign in',

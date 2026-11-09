@@ -121,68 +121,59 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-4 bg-background">
-    <div class="w-full max-w-md rounded-[14px] border border-border bg-surface p-6 space-y-4 shadow-lg">
-      <div class="space-y-2">
-        <h1 class="text-xl">
-          <BrandMark :size="28" />
-        </h1>
-        <p class="text-sm text-muted">{{ t('setup.title') }}</p>
-        <p class="text-xs text-muted">{{ t('setup.step', { n: step, total: 3 }) }}</p>
+  <div class="min-h-screen flex items-center justify-center p-4 sm:p-8">
+    <div class="jd-panel w-full max-w-md rounded-[16px] p-7 sm:p-8 space-y-5">
+      <div class="space-y-3">
+        <BrandMark :size="32" />
+        <div class="space-y-1">
+          <h1 class="text-2xl font-semibold tracking-tight">{{ t('setup.title') }}</h1>
+          <p class="text-xs text-muted">{{ t('setup.step', { n: step, total: 3 }) }}</p>
+        </div>
+        <div class="flex gap-1.5">
+          <span
+            v-for="n in 3"
+            :key="n"
+            class="h-1 flex-1 rounded-full transition-colors"
+            :class="n <= step ? 'bg-primary' : 'bg-surface-3'"
+          />
+        </div>
       </div>
 
       <form v-if="step === 1" class="space-y-4" @submit.prevent="submitAdmin">
-        <p class="text-xs text-muted">{{ t('setup.hint') }}</p>
+        <p class="text-sm text-muted leading-relaxed">{{ t('setup.hint') }}</p>
         <div>
-          <label class="block text-xs font-medium text-muted mb-1">{{ t('login.username') }}</label>
-          <input
-            v-model="username"
-            autocomplete="username"
-            class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
-            required
-          />
+          <label class="block text-xs font-medium text-muted mb-1.5">{{ t('login.username') }}</label>
+          <input v-model="username" autocomplete="username" class="jd-field" required />
         </div>
         <div>
-          <label class="block text-xs font-medium text-muted mb-1">{{ t('login.password') }}</label>
+          <label class="block text-xs font-medium text-muted mb-1.5">{{ t('login.password') }}</label>
           <input
             v-model="password"
             type="password"
             autocomplete="new-password"
             minlength="8"
-            class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+            class="jd-field"
             required
           />
         </div>
-        <button
-          type="submit"
-          class="w-full rounded-[10px] bg-primary text-primary-fg py-2 text-sm font-medium disabled:opacity-50"
-          :disabled="busy"
-        >
+        <button type="submit" class="jd-btn jd-btn-primary w-full py-2.5 disabled:opacity-50" :disabled="busy">
           {{ t('setup.submit') }}
         </button>
       </form>
 
       <div v-else-if="step === 2" class="space-y-4">
-        <p class="text-xs text-muted">{{ t('setup.jdHint') }}</p>
-        <label class="block space-y-1 text-sm">
-          <span class="text-xs text-muted">{{ t('settings.jdApiUrl') }}</span>
-          <input
-            v-model="jdApiUrl"
-            class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm font-mono"
-          />
+        <p class="text-sm text-muted leading-relaxed">{{ t('setup.jdHint') }}</p>
+        <label class="block space-y-1.5 text-sm">
+          <span class="text-xs font-medium text-muted">{{ t('settings.jdApiUrl') }}</span>
+          <input v-model="jdApiUrl" class="jd-field font-mono" />
         </label>
         <div class="flex gap-2">
-          <button
-            type="button"
-            class="flex-1 px-3 py-2 rounded-[10px] border border-border text-sm disabled:opacity-50"
-            :disabled="busy"
-            @click="detectJd"
-          >
+          <button type="button" class="jd-btn jd-btn-ghost flex-1 disabled:opacity-50" :disabled="busy" @click="detectJd">
             {{ t('settings.detectJd') }}
           </button>
           <button
             type="button"
-            class="flex-1 px-3 py-2 rounded-[10px] bg-primary text-primary-fg text-sm disabled:opacity-50"
+            class="jd-btn jd-btn-primary flex-1 disabled:opacity-50"
             :disabled="busy"
             @click="saveJdAndContinue"
           >
@@ -192,26 +183,26 @@ onMounted(() => {
       </div>
 
       <div v-else class="space-y-3">
-        <p class="text-xs text-muted">{{ t('setup.pathsHint') }}</p>
-        <label class="block space-y-1 text-sm">
-          <span class="text-xs text-muted">{{ t('settings.staging') }}</span>
-          <input v-model="stagingDir" class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono" />
+        <p class="text-sm text-muted leading-relaxed">{{ t('setup.pathsHint') }}</p>
+        <label class="block space-y-1.5 text-sm">
+          <span class="text-xs font-medium text-muted">{{ t('settings.staging') }}</span>
+          <input v-model="stagingDir" class="jd-field font-mono" />
         </label>
-        <label class="block space-y-1 text-sm">
-          <span class="text-xs text-muted">{{ t('settings.movies') }}</span>
-          <input v-model="moviesDir" class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono" />
+        <label class="block space-y-1.5 text-sm">
+          <span class="text-xs font-medium text-muted">{{ t('settings.movies') }}</span>
+          <input v-model="moviesDir" class="jd-field font-mono" />
         </label>
-        <label class="block space-y-1 text-sm">
-          <span class="text-xs text-muted">{{ t('settings.shows') }}</span>
-          <input v-model="showsDir" class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono" />
+        <label class="block space-y-1.5 text-sm">
+          <span class="text-xs font-medium text-muted">{{ t('settings.shows') }}</span>
+          <input v-model="showsDir" class="jd-field font-mono" />
         </label>
-        <label class="block space-y-1 text-sm">
-          <span class="text-xs text-muted">{{ t('settings.other') }}</span>
-          <input v-model="otherDir" class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono" />
+        <label class="block space-y-1.5 text-sm">
+          <span class="text-xs font-medium text-muted">{{ t('settings.other') }}</span>
+          <input v-model="otherDir" class="jd-field font-mono" />
         </label>
         <button
           type="button"
-          class="w-full rounded-[10px] bg-primary text-primary-fg py-2 text-sm font-medium disabled:opacity-50"
+          class="jd-btn jd-btn-primary w-full py-2.5 disabled:opacity-50"
           :disabled="busy"
           @click="savePathsAndFinish"
         >
@@ -222,20 +213,16 @@ onMounted(() => {
       <p v-if="error" class="text-sm text-danger-text">{{ error }}</p>
       <p v-if="info" class="text-sm text-accent-text">{{ info }}</p>
 
-      <div class="flex gap-2 text-xs pt-2 border-t border-border">
+      <div class="flex gap-2 text-xs pt-3 border-t border-border">
         <select
-          class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1"
+          class="jd-field flex-1 py-2"
           :value="locale"
           @change="setLocale(($event.target as HTMLSelectElement).value as 'en' | 'fr')"
         >
           <option value="en">{{ t('lang.en') }}</option>
           <option value="fr">{{ t('lang.fr') }}</option>
         </select>
-        <button
-          type="button"
-          class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1"
-          @click="app.flipTheme()"
-        >
+        <button type="button" class="jd-btn jd-btn-ghost flex-1" @click="app.flipTheme()">
           {{ app.theme === 'dark' ? t('theme.light') : t('theme.dark') }}
         </button>
       </div>

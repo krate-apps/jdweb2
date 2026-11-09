@@ -23,6 +23,7 @@ export default {
   },
   login: {
     title: 'Connexion à jdweb',
+    hint: 'Gérez les téléchargements via votre JDownloader local — derrière votre propre authentification.',
     username: 'Nom d’utilisateur',
     password: 'Mot de passe',
     submit: 'Se connecter',
