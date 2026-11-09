@@ -250,7 +250,7 @@ async function submit() {
             ref="fileInput"
             type="file"
             class="hidden"
-            accept=".dlc,application/x-dlc"
+            accept=".dlc,.ccf,.rsdf,application/x-dlc,application/x-ccf,application/x-rsdf"
             multiple
             @change="onFilesPicked"
           />

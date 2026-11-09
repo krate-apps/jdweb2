@@ -217,7 +217,7 @@ export function containerDataUrl(file: File): Promise<string> {
   })
 }
 
-export const CONTAINER_EXTENSIONS = ['.dlc']
+export const CONTAINER_EXTENSIONS = ['.dlc', '.ccf', '.rsdf']
 
 export function moveGrabberToDownloads(linkIds: number[], packageIds: number[] = []) {
   return jdCall('/linkgrabberv2/moveToDownloadlist', linkIds, packageIds)

@@ -23,8 +23,8 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 - Right-click actions on download packages, links, and link-grabber rows (rename, comment, stop-after, move, retry extract, …)
 - Retry archive extraction with a password from a package’s context menu
 - Ctrl+L (Cmd+L on macOS) opens the add-links dialog outside text fields
-- Add links accepts pasted URLs or `.dlc` container files and shows crawler progress (found / filtered / broken)
-- Drop `.dlc` files anywhere in the window to open Add links on the DLC tab
+- Add links accepts pasted URLs or `.dlc` / `.ccf` / `.rsdf` containers and shows crawler progress (found / filtered / broken)
+- Drop container files anywhere in the window to open Add links on the Containers tab
 - Destinations: Movies, Series, Other, with autocomplete from existing library folders
 - Optional automatic mover from staging folders into a library
 - English and French interface
