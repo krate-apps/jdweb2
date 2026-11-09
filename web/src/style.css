@@ -137,7 +137,6 @@ body,
 }
 
 .jd-field {
-  width: 100%;
   border: 1px solid var(--jd-border);
   background: var(--jd-input);
   border-radius: var(--radius-sm);

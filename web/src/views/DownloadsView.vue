@@ -163,21 +163,25 @@ async function onMenuSelect(action: string) {
 
 <template>
   <div class="p-3 sm:p-4 space-y-3 overflow-x-auto" @click="hideMenu">
-    <div class="jd-panel rounded-[16px] px-3 py-2.5 flex flex-wrap gap-3 items-center text-sm">
-      <label class="text-xs font-medium text-muted">{{ t('downloads.filter') }}</label>
-      <select v-model="filter" class="jd-field w-auto py-1.5">
-        <option value="all">{{ t('downloads.filterAll') }}</option>
-        <option value="running">{{ t('downloads.filterRunning') }}</option>
-        <option value="finished">{{ t('downloads.filterFinished') }}</option>
-        <option value="error">{{ t('downloads.filterError') }}</option>
-      </select>
-      <label class="text-xs font-medium text-muted">{{ t('downloads.sort') }}</label>
-      <select v-model="sortKey" class="jd-field w-auto py-1.5">
-        <option value="name">{{ t('downloads.name') }}</option>
-        <option value="size">{{ t('downloads.size') }}</option>
-        <option value="eta">{{ t('downloads.eta') }}</option>
-      </select>
-      <span class="jd-chip ml-auto text-muted">{{ visiblePackages.length }}</span>
+    <div class="jd-panel rounded-[16px] px-3 py-2 flex flex-nowrap items-center gap-3 text-sm overflow-x-auto">
+      <label class="inline-flex items-center gap-2 shrink-0">
+        <span class="text-xs font-medium text-muted">{{ t('downloads.filter') }}</span>
+        <select v-model="filter" class="jd-field min-w-28 py-1.5">
+          <option value="all">{{ t('downloads.filterAll') }}</option>
+          <option value="running">{{ t('downloads.filterRunning') }}</option>
+          <option value="finished">{{ t('downloads.filterFinished') }}</option>
+          <option value="error">{{ t('downloads.filterError') }}</option>
+        </select>
+      </label>
+      <label class="inline-flex items-center gap-2 shrink-0">
+        <span class="text-xs font-medium text-muted">{{ t('downloads.sort') }}</span>
+        <select v-model="sortKey" class="jd-field min-w-28 py-1.5">
+          <option value="name">{{ t('downloads.name') }}</option>
+          <option value="size">{{ t('downloads.size') }}</option>
+          <option value="eta">{{ t('downloads.eta') }}</option>
+        </select>
+      </label>
+      <span class="jd-chip ml-auto shrink-0 text-muted tabular-nums">{{ visiblePackages.length }}</span>
     </div>
 
     <div class="jd-panel rounded-[16px] overflow-hidden min-w-[720px]">

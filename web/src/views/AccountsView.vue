@@ -117,15 +117,15 @@ async function changePassword(account: HosterAccount) {
       <div class="grid sm:grid-cols-3 gap-3">
         <div>
           <label class="text-xs font-medium text-muted mb-1.5 block">{{ t('accounts.hoster') }}</label>
-          <input v-model="hoster" required class="jd-field" placeholder="rapidgator.net" />
+          <input v-model="hoster" required class="jd-field w-full" placeholder="rapidgator.net" />
         </div>
         <div>
           <label class="text-xs font-medium text-muted mb-1.5 block">{{ t('accounts.username') }}</label>
-          <input v-model="username" required class="jd-field" />
+          <input v-model="username" required class="jd-field w-full" />
         </div>
         <div>
           <label class="text-xs font-medium text-muted mb-1.5 block">{{ t('accounts.password') }}</label>
-          <input v-model="password" type="password" required class="jd-field" />
+          <input v-model="password" type="password" required class="jd-field w-full" />
         </div>
       </div>
       <p v-if="error" class="text-xs text-danger-text">{{ error }}</p>

@@ -52,7 +52,7 @@ async function submit() {
           <input
             v-model="username"
             autocomplete="username"
-            class="jd-field"
+            class="jd-field w-full"
             required
           />
         </div>
@@ -62,7 +62,7 @@ async function submit() {
             v-model="password"
             type="password"
             autocomplete="current-password"
-            class="jd-field"
+            class="jd-field w-full"
             required
           />
         </div>

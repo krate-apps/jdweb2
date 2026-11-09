@@ -143,7 +143,7 @@ onMounted(() => {
         <p class="text-sm text-muted leading-relaxed">{{ t('setup.hint') }}</p>
         <div>
           <label class="block text-xs font-medium text-muted mb-1.5">{{ t('login.username') }}</label>
-          <input v-model="username" autocomplete="username" class="jd-field" required />
+          <input v-model="username" autocomplete="username" class="jd-field w-full" required />
         </div>
         <div>
           <label class="block text-xs font-medium text-muted mb-1.5">{{ t('login.password') }}</label>
@@ -152,7 +152,7 @@ onMounted(() => {
             type="password"
             autocomplete="new-password"
             minlength="8"
-            class="jd-field"
+            class="jd-field w-full"
             required
           />
         </div>
@@ -165,7 +165,7 @@ onMounted(() => {
         <p class="text-sm text-muted leading-relaxed">{{ t('setup.jdHint') }}</p>
         <label class="block space-y-1.5 text-sm">
           <span class="text-xs font-medium text-muted">{{ t('settings.jdApiUrl') }}</span>
-          <input v-model="jdApiUrl" class="jd-field font-mono" />
+          <input v-model="jdApiUrl" class="jd-field font-mono w-full" />
         </label>
         <div class="flex gap-2">
           <button type="button" class="jd-btn jd-btn-ghost flex-1 disabled:opacity-50" :disabled="busy" @click="detectJd">
@@ -186,19 +186,19 @@ onMounted(() => {
         <p class="text-sm text-muted leading-relaxed">{{ t('setup.pathsHint') }}</p>
         <label class="block space-y-1.5 text-sm">
           <span class="text-xs font-medium text-muted">{{ t('settings.staging') }}</span>
-          <input v-model="stagingDir" class="jd-field font-mono" />
+          <input v-model="stagingDir" class="jd-field font-mono w-full" />
         </label>
         <label class="block space-y-1.5 text-sm">
           <span class="text-xs font-medium text-muted">{{ t('settings.movies') }}</span>
-          <input v-model="moviesDir" class="jd-field font-mono" />
+          <input v-model="moviesDir" class="jd-field font-mono w-full" />
         </label>
         <label class="block space-y-1.5 text-sm">
           <span class="text-xs font-medium text-muted">{{ t('settings.shows') }}</span>
-          <input v-model="showsDir" class="jd-field font-mono" />
+          <input v-model="showsDir" class="jd-field font-mono w-full" />
         </label>
         <label class="block space-y-1.5 text-sm">
           <span class="text-xs font-medium text-muted">{{ t('settings.other') }}</span>
-          <input v-model="otherDir" class="jd-field font-mono" />
+          <input v-model="otherDir" class="jd-field font-mono w-full" />
         </label>
         <button
           type="button"
