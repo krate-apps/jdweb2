@@ -4,6 +4,7 @@ import { constants } from 'node:fs'
 import { config } from './config.js'
 import { jdCall } from './jd.js'
 import { libraryPathForStaging } from './destinations.js'
+import { recordMoveEvent } from './move-history.js'
 
 interface PackageInfo {
   uuid: number
@@ -98,10 +99,23 @@ async function processFinishedPackages(): Promise<MoverRunResult> {
       if (!ready) continue
       await moveTree(pkg.saveTo, target)
       await jdCall('/downloadsV2/removeLinks', [], [pkg.uuid])
+      recordMoveEvent({
+        packageName: pkg.name,
+        fromPath: pkg.saveTo,
+        toPath: target,
+        status: 'succeeded',
+      })
       moved += 1
     } catch (err) {
       failed += 1
       const message = err instanceof Error ? err.message : String(err)
+      recordMoveEvent({
+        packageName: pkg.name,
+        fromPath: pkg.saveTo,
+        toPath: target,
+        status: 'failed',
+        error: message,
+      })
       try {
         await jdCall('/downloadsV2/setComment', `jdweb-mover: ${message}`, [], [pkg.uuid])
       } catch {

@@ -19,6 +19,7 @@ import {
 import { proxyJdRequest } from './jd.js'
 import { describeDestination, stagingPathFor, type DestinationKind } from './destinations.js'
 import { movePackageNow, runMoverNow, startMover } from './mover.js'
+import { listMoveEvents } from './move-history.js'
 import { initDb } from './db.js'
 import {
   countUsers,
@@ -396,6 +397,12 @@ app.post(mount('/api/mover/run'), requireAuth, async (c) => {
     const status = message === 'mover_busy' ? 409 : 500
     return c.json({ error: message }, status)
   }
+})
+
+app.get(mount('/api/mover/history'), requireAuth, (c) => {
+  const raw = Number(c.req.query('limit') ?? 50)
+  const limit = Number.isFinite(raw) ? raw : 50
+  return c.json({ events: listMoveEvents(limit) })
 })
 
 app.all(mount('/api/jd/*'), requireAuth, async (c) => {

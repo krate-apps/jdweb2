@@ -62,6 +62,17 @@ const MIGRATIONS = [
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );
   `,
+  `
+  CREATE TABLE IF NOT EXISTS move_events (
+    id INTEGER PRIMARY KEY,
+    package_name TEXT NOT NULL,
+    from_path TEXT NOT NULL,
+    to_path TEXT NOT NULL,
+    status TEXT NOT NULL,
+    error TEXT,
+    created_at INTEGER NOT NULL
+  );
+  `,
 ]
 
 export function getDb(): DatabaseSync {

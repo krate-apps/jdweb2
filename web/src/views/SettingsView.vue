@@ -31,7 +31,27 @@ const myPasswordMsg = ref<string | null>(null)
 const sessions = ref<AppSession[]>([])
 const sessionError = ref<string | null>(null)
 const moverBusy = ref(false)
+const moveEvents = ref<
+  {
+    id: number
+    packageName: string
+    fromPath: string
+    toPath: string
+    status: string
+    error: string | null
+    createdAt: number
+  }[]
+>([])
 const error = ref<string | null>(null)
+
+async function loadMoveHistory() {
+  try {
+    const result = await apiJson<{ events: typeof moveEvents.value }>('api/mover/history')
+    moveEvents.value = result.events
+  } catch {
+    moveEvents.value = []
+  }
+}
 
 async function runMover() {
   moverBusy.value = true
@@ -42,11 +62,16 @@ async function runMover() {
     })
     app.addToast(t('settings.moverResult', { moved: result.moved, failed: result.failed }))
     await downloads.refresh()
+    await loadMoveHistory()
   } catch (err) {
     app.addToast(err instanceof ApiError ? err.message : t('common.error'))
   } finally {
     moverBusy.value = false
   }
+}
+
+function formatMoveTime(ms: number): string {
+  return new Date(ms).toLocaleString()
 }
 
 function formatErr(err: unknown): string {
@@ -143,6 +168,7 @@ async function load() {
   }
   void loadUsers()
   void loadSessions()
+  void loadMoveHistory()
   try {
     maxDownloads.value = (await jd.getMaxSimultDownloads()) ?? 3
     maxChunks.value = (await jd.getMaxChunks()) ?? 1
@@ -412,6 +438,28 @@ async function removePassword(value: string) {
       >
         {{ t('settings.runMover') }}
       </button>
+    </section>
+
+    <section class="space-y-2">
+      <h2 class="text-sm font-semibold text-muted">{{ t('settings.moveHistory') }}</h2>
+      <p v-if="moveEvents.length === 0" class="text-xs text-muted">{{ t('settings.moveHistoryEmpty') }}</p>
+      <ul v-else class="space-y-2 text-xs">
+        <li
+          v-for="ev in moveEvents"
+          :key="ev.id"
+          class="rounded-[10px] bg-surface-2 px-2 py-1.5 space-y-0.5"
+        >
+          <div class="flex justify-between gap-2">
+            <span class="font-medium text-foreground truncate">{{ ev.packageName }}</span>
+            <span :class="ev.status === 'succeeded' ? 'text-accent-text' : 'text-danger-text'">
+              {{ ev.status === 'succeeded' ? t('settings.moveSucceeded') : t('settings.moveFailed') }}
+            </span>
+          </div>
+          <div class="text-muted truncate">{{ ev.fromPath }} → {{ ev.toPath }}</div>
+          <div v-if="ev.error" class="text-danger-text truncate">{{ ev.error }}</div>
+          <div class="text-muted">{{ formatMoveTime(ev.createdAt) }}</div>
+        </li>
+      </ul>
     </section>
   </div>
 </template>

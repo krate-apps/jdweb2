@@ -23,6 +23,8 @@ When `JDWEB_MOVER_INTERVAL_MS` is greater than zero, jdweb periodically looks fo
 3. Removes the staging folder
 4. Removes the package from JDownloader’s download list
 
-Failures are written into the package comment with a `jdweb-mover:` prefix so they remain visible in the UI.
+Failures are written into the package comment with a `jdweb-mover:` prefix so they remain visible in the UI. Each attempt is also stored in SQLite (`move_events`) and listed under Settings → Recent moves (`GET /api/mover/history`).
+
+Settings → **Run mover now** calls `POST /api/mover/run` for a one-shot pass using the same logic as the interval tick.
 
 Set `JDWEB_MOVER_INTERVAL_MS=0` to disable automatic moves. Manual destination changes still update JDownloader’s download directory.
