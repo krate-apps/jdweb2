@@ -55,12 +55,14 @@ export function issueSession(
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(id, user.id, user.username, now, now, meta.userAgent ?? null, meta.ip ?? null)
+  const forwardedProto = c.req.header('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase()
+  const secure = c.req.url.startsWith('https://') || forwardedProto === 'https'
   setCookie(c, COOKIE, encodeCookie(id), {
     httpOnly: true,
     sameSite: 'Lax',
     path: config.basePath || '/',
     maxAge: MAX_AGE_SEC,
-    secure: c.req.url.startsWith('https://'),
+    secure,
   })
   return {
     id,

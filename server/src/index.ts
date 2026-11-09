@@ -7,7 +7,7 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { access, mkdir, readFile } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { join, resolve, sep } from 'node:path'
-import { config } from './config.js'
+import { assertProductionSecrets, config } from './config.js'
 import {
   clearSession,
   issueSession,
@@ -17,11 +17,15 @@ import {
   revokeOtherSessions,
   revokeSession,
 } from './auth.js'
-import { proxyJdRequest } from './jd.js'
+import { proxyJdRequest, probeJdApi } from './jd.js'
 import { describeDestination, stagingPathFor, type DestinationKind } from './destinations.js'
-import { movePackageNow, runMoverNow, startMover } from './mover.js'
+import { movePackageNow, restartMover, runMoverNow, startMover } from './mover.js'
 import { listMoveEvents } from './move-history.js'
 import { initDb } from './db.js'
+import { getAppSettings, initAppSettings, updateAppSettings } from './settings.js'
+import { assertSafeJdApiUrl } from './security.js'
+import { rateLimitAllow } from './rate-limit.js'
+import { recordAudit } from './audit.js'
 import {
   countUsers,
   changeOwnPassword,
@@ -115,32 +119,65 @@ function errorStatus(message: string): ContentfulStatusCode {
     case 'password_too_short':
     case 'kind_and_title_required':
     case 'invalid_body':
+    case 'invalid_jd_api_url':
+    case 'jd_api_url_not_private':
+    case 'invalid_mover_interval':
+    case 'path_required':
       return 400
     case 'setup_localhost_only':
       return 403
+    case 'rate_limited':
+      return 429
     default:
       return 500
   }
 }
 
-app.get(mount('/api/health'), (c) =>
-  c.json({
+app.use('*', async (c, next) => {
+  c.header('X-Content-Type-Options', 'nosniff')
+  c.header('Referrer-Policy', 'no-referrer')
+  c.header('X-Frame-Options', 'DENY')
+  c.header(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'",
+  )
+  await next()
+})
+
+app.get(mount('/api/health'), async (c) => {
+  const settings = getAppSettings()
+  const jd = await probeJdApi(settings.jdApiUrl)
+  let uiBuilt = false
+  try {
+    await access(join(config.webDist, 'index.html'), constants.R_OK)
+    uiBuilt = true
+  } catch {
+    uiBuilt = false
+  }
+  return c.json({
     ok: true,
     basePath: base || '/',
-    mover: config.moverIntervalMs > 0,
+    mover: settings.moverIntervalMs > 0,
     needsSetup: countUsers() === 0,
-  }),
-)
+    jdReachable: jd.ok,
+    jdApiUrl: settings.jdApiUrl,
+    uiBuilt,
+    settingsReady: true,
+  })
+})
 
 app.get(mount('/api/setup/status'), (c) => c.json({ needsSetup: countUsers() === 0 }))
 
 app.post(mount('/api/setup/admin'), async (c) => {
   if (countUsers() > 0) return c.json({ error: 'setup_already_done' }, 403)
   if (!isLoopback(c)) return c.json({ error: 'setup_localhost_only' }, 403)
+  const ip = clientIp(c) || 'loopback'
+  if (!rateLimitAllow(`setup:${ip}`, 10, 60_000)) return c.json({ error: 'rate_limited' }, 429)
   const body = (await c.req.json().catch(() => null)) as { username?: string; password?: string } | null
   try {
     const user = await createUser(body?.username ?? '', body?.password ?? '')
     issueSession(c, user.username, sessionMeta(c))
+    recordAudit('setup.admin', user.username, user.username)
     return c.json({ username: user.username })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'setup_failed'
@@ -148,16 +185,48 @@ app.post(mount('/api/setup/admin'), async (c) => {
   }
 })
 
+const JD_PROBE_PORTS = [3128, 49247, 3129, 8080]
+
+app.post(mount('/api/setup/probe-jd'), async (c) => {
+  const session = readSession(c)
+  if (countUsers() === 0 && !isLoopback(c)) return c.json({ error: 'setup_localhost_only' }, 403)
+  if (countUsers() > 0 && !session) return c.json({ error: 'unauthorized' }, 401)
+  const body = (await c.req.json().catch(() => null)) as { url?: string } | null
+  if (body?.url?.trim()) {
+    try {
+      const url = assertSafeJdApiUrl(body.url)
+      return c.json(await probeJdApi(url))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'invalid_jd_api_url'
+      return c.json({ error: message }, errorStatus(message))
+    }
+  }
+  const found: { url: string; version: unknown }[] = []
+  for (const port of JD_PROBE_PORTS) {
+    const url = `http://127.0.0.1:${port}`
+    const result = await probeJdApi(url)
+    if (result.ok) found.push({ url, version: result.version })
+  }
+  return c.json({ candidates: found })
+})
+
 app.post(mount('/api/auth/login'), async (c) => {
   if (countUsers() === 0) return c.json({ error: 'needs_setup' }, 503)
+  const ip = clientIp(c) || 'unknown'
+  if (!rateLimitAllow(`login:${ip}`, 20, 60_000)) {
+    recordAudit('auth.login_rate_limited', ip)
+    return c.json({ error: 'rate_limited' }, 429)
+  }
   const body = (await c.req.json().catch(() => null)) as { username?: string; password?: string } | null
   const user = await verifyLogin(body?.username ?? '', body?.password ?? '')
   if (!user) {
     noteAuthLogin(false)
+    recordAudit('auth.login_failed', body?.username?.trim() || null)
     log('warn', 'auth login failed', { username: body?.username?.trim() || null })
     return c.json({ error: 'invalid_credentials' }, 401)
   }
   noteAuthLogin(true)
+  recordAudit('auth.login_ok', user.username, user.username)
   log('info', 'auth login ok', { username: user.username })
   issueSession(c, user.username, sessionMeta(c))
   return c.json({ username: user.username })
@@ -293,7 +362,9 @@ app.patch(mount('/api/hosters/:id'), requireAuth, async (c) => {
   } | null
   try {
     if (typeof body?.password === 'string' && body.password.length > 0) {
-      return c.json(await updateHosterPassword(id, body.password))
+      const hoster = await updateHosterPassword(id, body.password)
+      recordAudit('hoster.password_change', String(id), c.get('username'))
+      return c.json(hoster)
     }
     if (typeof body?.enabled === 'boolean') {
       return c.json(await setHosterEnabled(id, body.enabled))
@@ -344,15 +415,54 @@ app.post(mount('/api/hosters/:id/resync'), requireAuth, async (c) => {
   }
 })
 
-app.get(mount('/api/config/public'), requireAuth, (c) =>
-  c.json({
-    stagingDir: config.stagingDir,
-    moviesDir: config.moviesDir,
-    showsDir: config.showsDir,
-    otherDir: config.otherDir,
-    moverEnabled: config.moverIntervalMs > 0,
-  }),
-)
+app.get(mount('/api/config/public'), requireAuth, (c) => {
+  const s = getAppSettings()
+  return c.json({
+    stagingDir: s.stagingDir,
+    moviesDir: s.moviesDir,
+    showsDir: s.showsDir,
+    otherDir: s.otherDir,
+    moverEnabled: s.moverIntervalMs > 0,
+    moverIntervalMs: s.moverIntervalMs,
+    jdApiUrl: s.jdApiUrl,
+  })
+})
+
+app.get(mount('/api/settings'), requireAuth, (c) => c.json({ settings: getAppSettings() }))
+
+app.patch(mount('/api/settings'), requireAuth, async (c) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    jdApiUrl?: string
+    stagingDir?: string
+    moviesDir?: string
+    showsDir?: string
+    otherDir?: string
+    moverIntervalMs?: number
+  } | null
+  if (!body) return c.json({ error: 'invalid_body' }, 400)
+  try {
+    const prevInterval = getAppSettings().moverIntervalMs
+    const settings = updateAppSettings(body)
+    if (settings.moverIntervalMs !== prevInterval) restartMover()
+    recordAudit('settings.update', JSON.stringify(body), c.get('username'))
+    // Ensure library dirs exist after path changes
+    for (const dir of [
+      settings.stagingDir,
+      join(settings.stagingDir, 'movies'),
+      join(settings.stagingDir, 'shows'),
+      join(settings.stagingDir, 'downloads'),
+      settings.moviesDir,
+      settings.showsDir,
+      settings.otherDir,
+    ]) {
+      await mkdir(dir, { recursive: true })
+    }
+    return c.json({ settings })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'update_failed'
+    return c.json({ error: message }, errorStatus(message))
+  }
+})
 
 app.get(mount('/api/library/:root'), requireAuth, async (c) => {
   const rootParam = c.req.param('root') ?? ''
@@ -532,14 +642,15 @@ app.all(mount('/api/jd/*'), requireAuth, async (c) => {
 })
 
 async function ensureDirs(): Promise<void> {
+  const s = getAppSettings()
   for (const dir of [
-    config.stagingDir,
-    join(config.stagingDir, 'movies'),
-    join(config.stagingDir, 'shows'),
-    join(config.stagingDir, 'downloads'),
-    config.moviesDir,
-    config.showsDir,
-    config.otherDir,
+    s.stagingDir,
+    join(s.stagingDir, 'movies'),
+    join(s.stagingDir, 'shows'),
+    join(s.stagingDir, 'downloads'),
+    s.moviesDir,
+    s.showsDir,
+    s.otherDir,
   ]) {
     await mkdir(dir, { recursive: true })
   }
@@ -584,8 +695,10 @@ function resolveWebAsset(relPath: string): string | null {
 }
 
 async function main() {
-  await ensureDirs()
+  assertProductionSecrets()
   initDb()
+  initAppSettings()
+  await ensureDirs()
   const rotated = rotateHosterSecrets()
   if (rotated > 0) {
     log('info', 'rotated hoster secrets', { count: rotated })
