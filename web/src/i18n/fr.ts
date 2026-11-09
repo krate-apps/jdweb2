@@ -156,6 +156,7 @@ export default {
     import: 'Importer depuis JD',
     passwordRequired: 'mot de passe requis',
     changePassword: 'Changer le mot de passe',
+    changePasswordPrompt: 'Nouveau mot de passe pour {name}',
   },
   settings: {
     title: 'Réglages',

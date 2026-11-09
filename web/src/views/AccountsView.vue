@@ -80,6 +80,21 @@ async function importFromJd() {
     busy.value = false
   }
 }
+
+async function changePassword(account: HosterAccount) {
+  error.value = null
+  const next = window.prompt(t('accounts.changePasswordPrompt', { name: account.username }))
+  if (next == null || !next) return
+  busy.value = true
+  try {
+    await hostersApi.patchHoster(account.id, { password: next })
+    await refresh()
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : t('common.error')
+  } finally {
+    busy.value = false
+  }
+}
 </script>
 
 <template>
@@ -147,7 +162,17 @@ async function importFromJd() {
             <input type="checkbox" :checked="account.enabled" @change="toggle(account)" />
           </td>
           <td class="py-1.5 text-right space-x-2">
-            <button type="button" class="text-accent-text text-xs" @click="resync(account)">{{ t('accounts.resync') }}</button>
+            <button type="button" class="text-accent-text text-xs" @click="changePassword(account)">
+              {{ t('accounts.changePassword') }}
+            </button>
+            <button
+              type="button"
+              class="text-accent-text text-xs disabled:opacity-40"
+              :disabled="account.needsSecret"
+              @click="resync(account)"
+            >
+              {{ t('accounts.resync') }}
+            </button>
             <button type="button" class="text-danger-text text-xs" @click="remove(account)">{{ t('common.remove') }}</button>
           </td>
         </tr>
