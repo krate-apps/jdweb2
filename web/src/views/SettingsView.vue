@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Bell, Download, KeyRound, Link2, Palette, Users } from '@lucide/vue'
 import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
 import * as jd from '@/api/jd'
@@ -73,18 +74,14 @@ const webhookEventOptions: WebhookEvent[] = [
 ]
 const error = ref<string | null>(null)
 
-const nav = computed(() =>
-  (
-    [
-      { id: 'connection' as const, label: t('settings.navConnection') },
-      { id: 'downloads' as const, label: t('settings.navDownloads') },
-      { id: 'account' as const, label: t('settings.navAccount') },
-      { id: 'users' as const, label: t('settings.navUsers') },
-      { id: 'notifications' as const, label: t('settings.navNotifications') },
-      { id: 'appearance' as const, label: t('settings.navAppearance') },
-    ] as const
-  ),
-)
+const nav = computed(() => [
+  { id: 'connection' as const, label: t('settings.navConnection'), icon: Link2 },
+  { id: 'downloads' as const, label: t('settings.navDownloads'), icon: Download },
+  { id: 'account' as const, label: t('settings.navAccount'), icon: KeyRound },
+  { id: 'users' as const, label: t('settings.navUsers'), icon: Users },
+  { id: 'notifications' as const, label: t('settings.navNotifications'), icon: Bell },
+  { id: 'appearance' as const, label: t('settings.navAppearance'), icon: Palette },
+])
 
 const moverEnabled = computed(() => settingsForm.value.moverIntervalMs > 0)
 
@@ -376,7 +373,7 @@ async function removePassword(value: string) {
           v-for="item in nav"
           :key="item.id"
           type="button"
-          class="whitespace-nowrap text-left px-3 py-2 rounded-[10px] text-sm transition-colors"
+          class="inline-flex items-center gap-2 whitespace-nowrap text-left px-3 py-2 rounded-[10px] text-sm transition-colors"
           :class="
             section === item.id
               ? 'bg-surface-3 text-foreground font-medium'
@@ -384,6 +381,7 @@ async function removePassword(value: string) {
           "
           @click="section = item.id"
         >
+          <component :is="item.icon" class="size-3.5 shrink-0 opacity-80" aria-hidden="true" />
           {{ item.label }}
         </button>
       </nav>

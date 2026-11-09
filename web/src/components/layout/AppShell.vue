@@ -1,7 +1,25 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import {
+  CircleHelp,
+  Download,
+  Gauge,
+  Link2,
+  LogOut,
+  Moon,
+  Pause,
+  Play,
+  Plus,
+  Settings,
+  Square,
+  Sun,
+  Trash2,
+  Users,
+  Wifi,
+  WifiOff,
+} from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
@@ -25,6 +43,13 @@ const speedInputKbps = ref(0)
 const draggingDlc = ref(false)
 let dragDepth = 0
 let dialogTimer: ReturnType<typeof setInterval> | null = null
+
+const navItems = computed(() => [
+  { name: 'downloads' as const, label: t('nav.downloads'), icon: Download },
+  { name: 'grabber' as const, label: t('nav.grabber'), icon: Link2 },
+  { name: 'accounts' as const, label: t('nav.accounts'), icon: Users },
+  { name: 'settings' as const, label: t('nav.settings'), icon: Settings },
+])
 
 function openSpeedPopover() {
   speedInputKbps.value = Math.round(app.speedLimit / 1024)
@@ -139,106 +164,148 @@ async function onLogout() {
 
 <template>
   <div class="min-h-screen flex flex-col bg-background text-foreground">
-    <header class="border-b border-border bg-surface px-3 py-2 flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        class="mr-2 inline-flex items-center rounded-[10px] hover:opacity-90"
-        :title="t('about.open')"
-        @click="app.showAbout = true"
+    <header class="sticky top-0 z-40 border-b border-border/80 bg-surface/95 backdrop-blur-md px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-2">
+      <RouterLink
+        :to="{ name: 'downloads' }"
+        class="mr-1 inline-flex items-center rounded-[10px] outline-offset-2"
+        :title="t('app.name')"
       >
         <BrandMark :size="22" />
-      </button>
+      </RouterLink>
+
       <nav class="flex flex-wrap gap-1 text-sm">
         <RouterLink
-          v-for="item in [
-            { name: 'downloads', label: t('nav.downloads') },
-            { name: 'grabber', label: t('nav.grabber') },
-            { name: 'accounts', label: t('nav.accounts') },
-            { name: 'settings', label: t('nav.settings') },
-          ]"
+          v-for="item in navItems"
           :key="item.name"
           :to="{ name: item.name }"
-          class="px-2.5 py-1 rounded-[10px] text-muted hover:bg-surface-2 hover:text-foreground"
-          active-class="!bg-surface-3 !text-foreground"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] text-muted hover:bg-surface-2 hover:text-foreground transition-colors"
+          active-class="!bg-surface-3 !text-foreground !font-medium"
         >
-          {{ item.label }}
+          <component :is="item.icon" class="size-3.5 shrink-0 opacity-80" aria-hidden="true" />
+          <span>{{ item.label }}</span>
         </RouterLink>
       </nav>
-      <div class="ml-auto flex items-center gap-2 text-xs">
+
+      <div class="ml-auto flex items-center gap-1.5 sm:gap-2 text-xs">
         <span
-          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-[10px] bg-surface-2"
+          class="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-[10px] bg-surface-2"
           :title="app.connected ? t('app.connected') : t('app.disconnected')"
         >
-          <span
-            class="size-2 rounded-full"
-            :class="app.connected ? 'bg-state-seed' : 'bg-state-error'"
-          />
-          {{ app.connected ? t('app.connected') : t('app.disconnected') }}
+          <Wifi v-if="app.connected" class="size-3.5 text-state-seed" aria-hidden="true" />
+          <WifiOff v-else class="size-3.5 text-state-error" aria-hidden="true" />
+          <span class="hidden sm:inline">{{ app.connected ? t('app.connected') : t('app.disconnected') }}</span>
         </span>
+
         <select
-          class="bg-input border border-border rounded-[10px] px-2 py-1"
+          class="bg-input border border-border rounded-[10px] px-2 py-1.5"
           :value="locale"
+          :aria-label="t('lang.label')"
           @change="setLocale(($event.target as HTMLSelectElement).value as 'en' | 'fr')"
         >
           <option value="en">{{ t('lang.en') }}</option>
           <option value="fr">{{ t('lang.fr') }}</option>
         </select>
+
         <button
           type="button"
-          class="bg-input border border-border rounded-[10px] px-2 py-1"
+          class="inline-flex items-center justify-center size-8 bg-input border border-border rounded-[10px] hover:bg-surface-2"
+          :title="app.theme === 'dark' ? t('theme.light') : t('theme.dark')"
           @click="app.flipTheme()"
         >
-          {{ app.theme === 'dark' ? t('theme.light') : t('theme.dark') }}
+          <Sun v-if="app.theme === 'dark'" class="size-3.5" aria-hidden="true" />
+          <Moon v-else class="size-3.5" aria-hidden="true" />
         </button>
+
         <button
           type="button"
-          class="bg-surface-2 border border-border rounded-[10px] px-2 py-1"
+          class="inline-flex items-center justify-center size-8 bg-input border border-border rounded-[10px] hover:bg-surface-2"
+          :title="t('about.open')"
+          @click="app.showAbout = true"
+        >
+          <CircleHelp class="size-3.5" aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-2 border border-border rounded-[10px] hover:bg-surface-3"
           @click="onLogout"
         >
-          {{ t('nav.logout') }}
+          <LogOut class="size-3.5" aria-hidden="true" />
+          <span class="hidden sm:inline">{{ t('nav.logout') }}</span>
         </button>
       </div>
     </header>
 
-    <div class="relative border-b border-border bg-surface-2 px-3 py-1.5 flex flex-wrap gap-2 items-center text-sm">
+    <div class="relative border-b border-border bg-surface-2/90 px-3 sm:px-4 py-2 flex flex-wrap gap-1.5 items-center text-sm">
       <button
         type="button"
-        class="px-2 py-1 rounded-[10px] bg-primary text-primary-fg"
+        class="inline-flex items-center justify-center size-8 rounded-[10px] bg-primary text-primary-fg"
         :title="downloads.engineStopped ? t('downloads.startEngine') : t('downloads.stopEngine')"
         @click="downloads.engineStopped ? downloads.startEngine() : downloads.stopEngine()"
       >
-        {{ downloads.engineStopped ? '▶' : '■' }}
-      </button>
-      <button type="button" class="px-2 py-1 rounded-[10px] bg-surface border border-border" @click="downloads.pauseAll()">
-        {{ t('downloads.pauseAll') }}
-      </button>
-      <button type="button" class="px-2 py-1 rounded-[10px] bg-surface border border-border" @click="downloads.resumeAll()">
-        {{ t('downloads.resumeAll') }}
-      </button>
-      <button type="button" class="px-2 py-1 rounded-[10px] bg-surface border border-border" @click="downloads.cleanFinished()">
-        {{ t('downloads.cleanFinished') }}
-      </button>
-      <button type="button" class="px-2 py-1 rounded-[10px] bg-surface border border-border" @click="downloads.cleanFailed()">
-        {{ t('downloads.cleanFailed') }}
-      </button>
-      <button type="button" class="px-2 py-1 rounded-[10px] bg-surface border border-border" @click="downloads.cleanOffline()">
-        {{ t('downloads.cleanOffline') }}
+        <Play v-if="downloads.engineStopped" class="size-3.5 fill-current" aria-hidden="true" />
+        <Square v-else class="size-3 fill-current" aria-hidden="true" />
       </button>
       <button
         type="button"
-        class="px-2 py-1 rounded-[10px] bg-accent text-primary-fg"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-surface border border-border hover:bg-surface-3"
+        @click="downloads.pauseAll()"
+      >
+        <Pause class="size-3.5" aria-hidden="true" />
+        <span class="hidden md:inline">{{ t('downloads.pauseAll') }}</span>
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-surface border border-border hover:bg-surface-3"
+        @click="downloads.resumeAll()"
+      >
+        <Play class="size-3.5" aria-hidden="true" />
+        <span class="hidden md:inline">{{ t('downloads.resumeAll') }}</span>
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-surface border border-border hover:bg-surface-3"
+        :title="t('downloads.cleanFinished')"
+        @click="downloads.cleanFinished()"
+      >
+        <Trash2 class="size-3.5" aria-hidden="true" />
+        <span class="hidden lg:inline">{{ t('downloads.cleanFinished') }}</span>
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-surface border border-border hover:bg-surface-3"
+        :title="t('downloads.cleanFailed')"
+        @click="downloads.cleanFailed()"
+      >
+        <Trash2 class="size-3.5 text-danger-text" aria-hidden="true" />
+        <span class="hidden lg:inline">{{ t('downloads.cleanFailed') }}</span>
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-surface border border-border hover:bg-surface-3"
+        :title="t('downloads.cleanOffline')"
+        @click="downloads.cleanOffline()"
+      >
+        <WifiOff class="size-3.5" aria-hidden="true" />
+        <span class="hidden lg:inline">{{ t('downloads.cleanOffline') }}</span>
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-accent text-primary-fg"
         @click="app.showAddLinks = true"
       >
+        <Plus class="size-3.5" aria-hidden="true" />
         {{ t('downloads.addLinks') }}
       </button>
       <button
         type="button"
-        class="px-2 py-1 rounded-[10px] border border-border"
-        :class="app.speedLimit > 0 ? 'bg-primary/20 text-accent-text' : 'bg-surface'"
+        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] border border-border"
+        :class="app.speedLimit > 0 ? 'bg-primary/20 text-accent-text' : 'bg-surface hover:bg-surface-3'"
         :title="app.speedLimit > 0 ? t('downloads.speedLimitOn', { n: Math.round(app.speedLimit / 1024) }) : t('downloads.speedLimitOff')"
         @click="openSpeedPopover"
       >
-        {{ t('downloads.speedLimit') }}
+        <Gauge class="size-3.5" aria-hidden="true" />
+        <span class="hidden sm:inline">{{ t('downloads.speedLimit') }}</span>
       </button>
       <div
         v-if="showSpeedPopover"
@@ -278,20 +345,32 @@ async function onLogout() {
           </button>
         </div>
       </div>
-      <span class="ml-auto text-muted tabular-nums">{{ formatSpeed(downloads.totalSpeed) }}</span>
+      <span class="ml-auto inline-flex items-center gap-1.5 text-muted tabular-nums">
+        <Download class="size-3.5 opacity-70" aria-hidden="true" />
+        {{ formatSpeed(downloads.totalSpeed) }}
+      </span>
     </div>
 
     <main class="flex-1 overflow-auto">
       <RouterView />
     </main>
 
-    <footer class="border-t border-border bg-surface px-3 py-1.5 text-xs text-muted flex flex-wrap gap-4">
+    <footer class="border-t border-border bg-surface px-3 sm:px-4 py-2 text-xs text-muted flex flex-wrap gap-x-4 gap-y-1 items-center">
       <span>{{ t('downloads.packages') }}: {{ downloads.packages.length }}</span>
       <span>{{ t('downloads.links') }}: {{ downloads.links.length }}</span>
       <span>{{ t('downloads.speed') }}: {{ formatSpeed(downloads.totalSpeed) }}</span>
       <span>{{ t('downloads.remaining') }}: {{ formatSize(downloads.remainingBytes) }}</span>
       <span>{{ t('downloads.connections') }}: {{ downloads.activeConnections }}</span>
-      <span class="ml-auto">{{ downloads.engineStopped ? t('downloads.engineStopped') : t('downloads.engineRunning') }}</span>
+      <span>{{ downloads.engineStopped ? t('downloads.engineStopped') : t('downloads.engineRunning') }}</span>
+      <button
+        type="button"
+        class="ml-auto inline-flex items-center gap-1 hover:text-foreground"
+        :title="t('about.open')"
+        @click="app.showAbout = true"
+      >
+        <CircleHelp class="size-3.5" aria-hidden="true" />
+        <span class="font-mono tabular-nums">v{{ app.publicConfig?.version ?? '…' }}</span>
+      </button>
     </footer>
 
     <AddLinksModal v-if="app.showAddLinks" @close="app.showAddLinks = false" />

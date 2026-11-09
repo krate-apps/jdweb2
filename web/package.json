@@ -10,6 +10,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@lucide/vue": "^1.70.0",
     "pinia": "^2.3.0",
     "vue": "^3.5.13",
     "vue-i18n": "^11.1.0",
