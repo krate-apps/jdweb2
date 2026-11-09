@@ -7,6 +7,10 @@ export const useGrabberStore = defineStore('grabber', () => {
   const links = ref<GrabberLink[]>([])
   const selected = ref<Set<number>>(new Set())
 
+  function applySnapshot(next: GrabberLink[]) {
+    links.value = next
+  }
+
   async function refresh() {
     links.value = (await jd.queryGrabberLinks()) ?? []
   }
@@ -45,6 +49,7 @@ export const useGrabberStore = defineStore('grabber', () => {
   return {
     links,
     selected,
+    applySnapshot,
     refresh,
     toggleSelect,
     confirmAll,

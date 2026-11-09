@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { DownloadLink, PackageInfo } from '@/api/jd'
+import { extractionStateFromStatus } from '@/api/jd'
 import * as jd from '@/api/jd'
 import { i18n } from '@/i18n'
 import { notifyWebhook } from '@/api/webhooks'
@@ -28,18 +29,8 @@ export const useDownloadsStore = defineStore('downloads', () => {
     return links.value.filter((l) => l.packageUUID === pkgUuid)
   }
 
-  async function refresh() {
+  function noteFinishedTransitions(prevFinished: Set<number>) {
     const app = useAppStore()
-    const prevFinished = new Set(packages.value.filter((p) => p.finished).map((p) => p.uuid))
-    const [l, p, state] = await Promise.all([
-      jd.queryLinks(),
-      jd.queryPackages(),
-      jd.getControllerState(),
-    ])
-    links.value = l ?? []
-    packages.value = p ?? []
-    engineState.value = state ?? 'UNKNOWN'
-    app.connected = true
     for (const pkg of packages.value) {
       if (!pkg.finished || prevFinished.has(pkg.uuid)) continue
       if (app.showCompletionToasts) {
@@ -53,6 +44,37 @@ export const useDownloadsStore = defineStore('downloads', () => {
     }
   }
 
+  function applySnapshot(snapshot: {
+    links: DownloadLink[]
+    packages: PackageInfo[]
+    engineState: string
+  }) {
+    const prevFinished = new Set(packages.value.filter((p) => p.finished).map((p) => p.uuid))
+    links.value = snapshot.links
+    packages.value = snapshot.packages.map((pkg) => ({
+      ...pkg,
+      extraction: pkg.extraction ?? extractionStateFromStatus(pkg.status, pkg.finished),
+    }))
+    engineState.value = snapshot.engineState
+    useAppStore().markJdOk()
+    noteFinishedTransitions(prevFinished)
+  }
+
+  async function refresh() {
+    const app = useAppStore()
+    const [l, p, state] = await Promise.all([
+      jd.queryLinks(),
+      jd.queryPackages(),
+      jd.getControllerState(),
+    ])
+    applySnapshot({
+      links: l ?? [],
+      packages: p ?? [],
+      engineState: state ?? 'UNKNOWN',
+    })
+    app.markJdOk()
+  }
+
   function startPolling() {
     stopPolling()
     const app = useAppStore()
@@ -60,8 +82,8 @@ export const useDownloadsStore = defineStore('downloads', () => {
       if (document.hidden) return
       try {
         await refresh()
-      } catch {
-        app.connected = false
+      } catch (err) {
+        app.markJdError(err instanceof Error ? err.message : 'unreachable')
       }
     }
     void tick()
@@ -169,6 +191,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     remainingBytes,
     activeConnections,
     linksForPackage,
+    applySnapshot,
     refresh,
     startPolling,
     stopPolling,
