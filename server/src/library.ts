@@ -1,13 +1,14 @@
 import { readdir } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
-import { config } from './config.js'
+import { getAppSettings } from './settings.js'
 
 export type LibraryRoot = 'movies' | 'shows' | 'other'
 
 function rootDir(root: LibraryRoot): string {
-  if (root === 'movies') return config.moviesDir
-  if (root === 'shows') return config.showsDir
-  return config.otherDir
+  const s = getAppSettings()
+  if (root === 'movies') return s.moviesDir
+  if (root === 'shows') return s.showsDir
+  return s.otherDir
 }
 
 /** Resolve a path under a library root; rejects traversal outside the root. */

@@ -20,9 +20,15 @@ process.env.JDWEB_MOVIES_DIR = movies
 process.env.JDWEB_SHOWS_DIR = shows
 process.env.JDWEB_OTHER_DIR = other
 
+const { initDb, closeDb } = await import('./db.js')
+const { initAppSettings } = await import('./settings.js')
 const { isLibraryRoot, listLibraryFolders } = await import('./library.js')
 
+initDb()
+initAppSettings()
+
 after(() => {
+  closeDb()
   rmSync(root, { recursive: true, force: true })
 })
 

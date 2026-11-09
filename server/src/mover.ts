@@ -1,13 +1,13 @@
 import { cp, mkdir, rename, rm, stat, access } from 'node:fs/promises'
 import { dirname, join, basename } from 'node:path'
 import { constants } from 'node:fs'
-import { config } from './config.js'
 import { jdCall } from './jd.js'
 import { libraryPathForStaging } from './destinations.js'
 import { recordMoveEvent } from './move-history.js'
 import { dispatchWebhook } from './webhooks.js'
 import { log } from './log.js'
 import { noteMoverTick } from './metrics.js'
+import { getAppSettings } from './settings.js'
 
 interface PackageInfo {
   uuid: number
@@ -30,15 +30,22 @@ let running = false
 let jdReachable: boolean | null = null
 
 export function startMover(): void {
-  if (config.moverIntervalMs <= 0) return
+  const interval = getAppSettings().moverIntervalMs
+  if (interval <= 0) return
   if (timer) return
   void tick()
-  timer = setInterval(() => void tick(), config.moverIntervalMs)
+  timer = setInterval(() => void tick(), interval)
 }
 
 export function stopMover(): void {
   if (timer) clearInterval(timer)
   timer = null
+}
+
+/** Apply a new interval from settings (0 disables). */
+export function restartMover(): void {
+  stopMover()
+  startMover()
 }
 
 export type MoverRunResult = { moved: number; failed: number }
@@ -50,7 +57,7 @@ async function tick(): Promise<void> {
     const result = await processFinishedPackages()
     noteMoverTick(result)
     if (jdReachable === false) {
-      log('info', 'mover jd reachable again', { jdApiUrl: config.jdApiUrl })
+      log('info', 'mover jd reachable again', { jdApiUrl: getAppSettings().jdApiUrl })
     }
     jdReachable = true
   } catch (err) {
@@ -58,7 +65,7 @@ async function tick(): Promise<void> {
     const offline = /fetch failed|unreachable|ECONNREFUSED|ENOTFOUND|503/i.test(message)
     if (offline) {
       if (jdReachable !== false) {
-        log('warn', 'mover jd unreachable', { jdApiUrl: config.jdApiUrl })
+        log('warn', 'mover jd unreachable', { jdApiUrl: getAppSettings().jdApiUrl })
       }
       jdReachable = false
     } else {

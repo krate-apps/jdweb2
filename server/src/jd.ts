@@ -1,4 +1,4 @@
-import { config } from './config.js'
+import { getAppSettings } from './settings.js'
 import { log } from './log.js'
 import { noteJdError } from './metrics.js'
 
@@ -17,7 +17,8 @@ export class JdError extends Error {
  * Methods take positional params as POST `{"params":[...]}` and return `{data:...}`.
  */
 export async function jdCall<T>(path: string, ...params: unknown[]): Promise<T> {
-  const url = `${config.jdApiUrl}${path.startsWith('/') ? path : `/${path}`}`
+  const jdApiUrl = getAppSettings().jdApiUrl
+  const url = `${jdApiUrl}${path.startsWith('/') ? path : `/${path}`}`
   let response: Response
   try {
     response = await fetch(url, {
@@ -42,7 +43,8 @@ export async function jdCall<T>(path: string, ...params: unknown[]): Promise<T> 
 }
 
 export async function proxyJdRequest(path: string, rawBody: string | undefined): Promise<Response> {
-  const url = `${config.jdApiUrl}${path.startsWith('/') ? path : `/${path}`}`
+  const jdApiUrl = getAppSettings().jdApiUrl
+  const url = `${jdApiUrl}${path.startsWith('/') ? path : `/${path}`}`
   try {
     return await fetch(url, {
       method: 'POST',
@@ -57,9 +59,27 @@ export async function proxyJdRequest(path: string, rawBody: string | undefined):
       JSON.stringify({
         error: 'jdownloader_unreachable',
         detail,
-        jdApiUrl: config.jdApiUrl,
+        jdApiUrl,
       }),
       { status: 503, headers: { 'Content-Type': 'application/json' } },
     )
+  }
+}
+
+/** Probe JD local API; returns version data or null. */
+export async function probeJdApi(url = getAppSettings().jdApiUrl): Promise<{ ok: true; version: unknown } | { ok: false; error: string }> {
+  const target = `${url.replace(/\/+$/, '')}/jd/version`
+  try {
+    const response = await fetch(target, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"params":[]}',
+      signal: AbortSignal.timeout(4000),
+    })
+    if (!response.ok) return { ok: false, error: `http_${response.status}` }
+    const body = (await response.json()) as { data?: unknown }
+    return { ok: true, version: body.data }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'unreachable' }
   }
 }

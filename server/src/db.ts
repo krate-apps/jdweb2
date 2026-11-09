@@ -83,6 +83,22 @@ const MIGRATIONS = [
     updated_at INTEGER NOT NULL
   );
   `,
+  `
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  `,
+  `
+  CREATE TABLE IF NOT EXISTS audit_events (
+    id INTEGER PRIMARY KEY,
+    at INTEGER NOT NULL,
+    actor TEXT,
+    action TEXT NOT NULL,
+    detail TEXT
+  );
+  `,
 ]
 
 export function getDb(): DatabaseSync {
