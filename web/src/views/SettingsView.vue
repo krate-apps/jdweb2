@@ -10,6 +10,8 @@ import * as sessionsApi from '@/api/sessions'
 import type { AppSession } from '@/api/sessions'
 import { setLocale } from '@/i18n'
 import { ApiError, apiJson } from '@/api/http'
+import * as webhooksApi from '@/api/webhooks'
+import type { Webhook, WebhookEvent } from '@/api/webhooks'
 
 const { t, locale } = useI18n()
 const app = useAppStore()
@@ -42,7 +44,58 @@ const moveEvents = ref<
     createdAt: number
   }[]
 >([])
+const webhooks = ref<Webhook[]>([])
+const newWebhookUrl = ref('')
+const webhookError = ref<string | null>(null)
+const webhookEventOptions: WebhookEvent[] = [
+  'download.finished',
+  'mover.succeeded',
+  'mover.failed',
+]
 const error = ref<string | null>(null)
+
+async function loadWebhooks() {
+  webhookError.value = null
+  try {
+    webhooks.value = await webhooksApi.listWebhooks()
+  } catch (err) {
+    webhookError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function addWebhook() {
+  const url = newWebhookUrl.value.trim()
+  if (!url) return
+  webhookError.value = null
+  try {
+    await webhooksApi.createWebhook(url, [...webhookEventOptions])
+    newWebhookUrl.value = ''
+    await loadWebhooks()
+  } catch (err) {
+    webhookError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function toggleWebhook(hook: Webhook) {
+  webhookError.value = null
+  try {
+    await webhooksApi.updateWebhook(hook.id, { enabled: !hook.enabled })
+    await loadWebhooks()
+  } catch (err) {
+    webhookError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function removeWebhook(hook: Webhook) {
+  if (!confirm(t('settings.removeWebhookConfirm'))) return
+  webhookError.value = null
+  try {
+    await webhooksApi.deleteWebhook(hook.id)
+    await loadWebhooks()
+  } catch (err) {
+    webhookError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
 
 async function loadMoveHistory() {
   try {
@@ -169,6 +222,7 @@ async function load() {
   void loadUsers()
   void loadSessions()
   void loadMoveHistory()
+  void loadWebhooks()
   try {
     maxDownloads.value = (await jd.getMaxSimultDownloads()) ?? 3
     maxChunks.value = (await jd.getMaxChunks()) ?? 1
@@ -322,6 +376,40 @@ async function removePassword(value: string) {
         />
         {{ t('settings.completionToasts') }}
       </label>
+      <h3 class="text-xs font-semibold text-muted pt-2">{{ t('settings.webhooks') }}</h3>
+      <p class="text-xs text-muted">{{ t('settings.webhooksHint') }}</p>
+      <p v-if="webhookError" class="text-xs text-danger-text">{{ webhookError }}</p>
+      <ul class="space-y-2">
+        <li
+          v-for="hook in webhooks"
+          :key="hook.id"
+          class="flex items-start justify-between gap-2 text-sm bg-surface-2 rounded-[10px] px-2 py-1.5"
+        >
+          <div class="min-w-0 space-y-0.5">
+            <div class="font-mono text-xs truncate">{{ hook.url }}</div>
+            <div class="text-xs text-muted">{{ hook.events.join(', ') }}</div>
+          </div>
+          <div class="flex shrink-0 gap-2">
+            <button type="button" class="text-xs" @click="toggleWebhook(hook)">
+              {{ hook.enabled ? t('settings.webhookDisable') : t('settings.webhookEnable') }}
+            </button>
+            <button type="button" class="text-danger-text text-xs" @click="removeWebhook(hook)">
+              {{ t('common.remove') }}
+            </button>
+          </div>
+        </li>
+      </ul>
+      <div class="flex gap-2">
+        <input
+          v-model="newWebhookUrl"
+          class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
+          :placeholder="t('settings.webhookUrl')"
+          @keydown.enter="addWebhook"
+        />
+        <button type="button" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm" @click="addWebhook">
+          {{ t('common.add') }}
+        </button>
+      </div>
     </section>
 
     <section class="space-y-2">

@@ -43,6 +43,16 @@ import {
 } from './hosters.js'
 import { isLibraryRoot, listLibraryFolders } from './library.js'
 import { rotateHosterSecrets } from './crypto.js'
+import {
+  WEBHOOK_EVENTS,
+  createWebhook,
+  deleteWebhook,
+  dispatchWebhook,
+  listWebhooks,
+  seedWebhooksFromEnv,
+  updateWebhook,
+  type WebhookEvent,
+} from './webhooks.js'
 
 type Vars = { username: string; sessionId: string; userId: number }
 
@@ -405,6 +415,83 @@ app.get(mount('/api/mover/history'), requireAuth, (c) => {
   return c.json({ events: listMoveEvents(limit) })
 })
 
+app.get(mount('/api/webhooks'), requireAuth, (c) => c.json({ webhooks: listWebhooks() }))
+
+app.post(mount('/api/webhooks'), requireAuth, async (c) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    url?: string
+    events?: string[]
+    enabled?: boolean
+  } | null
+  if (!body?.url?.trim()) return c.json({ error: 'url_required' }, 400)
+  const events = (body.events ?? [...WEBHOOK_EVENTS]).filter((e): e is WebhookEvent =>
+    (WEBHOOK_EVENTS as readonly string[]).includes(e),
+  )
+  try {
+    const webhook = createWebhook(body.url, events, body.enabled !== false)
+    return c.json({ webhook }, 201)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'create_failed'
+    return c.json({ error: message }, message === 'invalid_url' ? 400 : 500)
+  }
+})
+
+app.patch(mount('/api/webhooks/:id'), requireAuth, async (c) => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isFinite(id)) return c.json({ error: 'invalid_id' }, 400)
+  const body = (await c.req.json().catch(() => null)) as {
+    url?: string
+    events?: string[]
+    enabled?: boolean
+  } | null
+  if (!body) return c.json({ error: 'invalid_body' }, 400)
+  const events = body.events?.filter((e): e is WebhookEvent =>
+    (WEBHOOK_EVENTS as readonly string[]).includes(e),
+  )
+  try {
+    const webhook = updateWebhook(id, {
+      url: body.url,
+      events,
+      enabled: body.enabled,
+    })
+    if (!webhook) return c.json({ error: 'not_found' }, 404)
+    return c.json({ webhook })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'update_failed'
+    return c.json({ error: message }, message === 'invalid_url' ? 400 : 500)
+  }
+})
+
+app.delete(mount('/api/webhooks/:id'), requireAuth, (c) => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isFinite(id)) return c.json({ error: 'invalid_id' }, 400)
+  if (!deleteWebhook(id)) return c.json({ error: 'not_found' }, 404)
+  return c.json({ ok: true })
+})
+
+app.post(mount('/api/webhooks/notify'), requireAuth, async (c) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    event?: string
+    package?: { uuid?: number; name?: string; saveTo?: string }
+    error?: string
+  } | null
+  if (!body?.event || !(WEBHOOK_EVENTS as readonly string[]).includes(body.event)) {
+    return c.json({ error: 'invalid_event' }, 400)
+  }
+  if (!body.package?.name?.trim()) return c.json({ error: 'package_required' }, 400)
+  void dispatchWebhook({
+    event: body.event as WebhookEvent,
+    at: new Date().toISOString(),
+    package: {
+      uuid: body.package.uuid,
+      name: body.package.name.trim(),
+      saveTo: body.package.saveTo,
+    },
+    error: body.error,
+  })
+  return c.json({ ok: true })
+})
+
 app.all(mount('/api/jd/*'), requireAuth, async (c) => {
   const prefix = mount('/api/jd')
   const url = new URL(c.req.url)
@@ -449,6 +536,10 @@ async function main() {
     console.log(`Re-encrypted ${rotated} hoster secret(s) with JDWEB_DATA_KEY; remove JDWEB_DATA_KEY_PREVIOUS after verifying`)
   }
   await seedAdminFromEnv()
+  const seededHooks = seedWebhooksFromEnv()
+  if (seededHooks > 0) {
+    console.log(`Seeded ${seededHooks} webhook(s) from JDWEB_WEBHOOK_URLS`)
+  }
   startMover()
 
   const staticRoot = config.webDist

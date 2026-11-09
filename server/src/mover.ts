@@ -5,6 +5,7 @@ import { config } from './config.js'
 import { jdCall } from './jd.js'
 import { libraryPathForStaging } from './destinations.js'
 import { recordMoveEvent } from './move-history.js'
+import { dispatchWebhook } from './webhooks.js'
 
 interface PackageInfo {
   uuid: number
@@ -105,6 +106,11 @@ async function processFinishedPackages(): Promise<MoverRunResult> {
         toPath: target,
         status: 'succeeded',
       })
+      void dispatchWebhook({
+        event: 'mover.succeeded',
+        at: new Date().toISOString(),
+        package: { uuid: pkg.uuid, name: pkg.name, saveTo: target },
+      })
       moved += 1
     } catch (err) {
       failed += 1
@@ -114,6 +120,12 @@ async function processFinishedPackages(): Promise<MoverRunResult> {
         fromPath: pkg.saveTo,
         toPath: target,
         status: 'failed',
+        error: message,
+      })
+      void dispatchWebhook({
+        event: 'mover.failed',
+        at: new Date().toISOString(),
+        package: { uuid: pkg.uuid, name: pkg.name, saveTo: pkg.saveTo },
         error: message,
       })
       try {

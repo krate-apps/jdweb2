@@ -19,6 +19,7 @@ All settings are environment variables. A template is provided in `.env.example`
 | `JDWEB_SHOWS_DIR` | Library folder for series |
 | `JDWEB_OTHER_DIR` | Library folder for other packages |
 | `JDWEB_MOVER_INTERVAL_MS` | Mover poll interval in milliseconds; `0` disables the mover |
+| `JDWEB_WEBHOOK_URLS` | CSV of HTTP webhook URLs seeded once when the webhooks table is empty |
 | `VITE_DEV_PROXY_TARGET` | Dev-only proxy target for the Vite server |
 
 ## Base path

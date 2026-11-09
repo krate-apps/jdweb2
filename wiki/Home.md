@@ -10,6 +10,7 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 - [Reverse proxy](Reverse-proxy)
 - [Destinations and library mover](Destinations-and-library-mover)
 - [Authentication](Authentication)
+- [Webhooks](Webhooks)
 
 ## Features
 
@@ -20,6 +21,7 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 - Premium hoster accounts stored encrypted in SQLite and synced to JDownloader (import from JD leaves password to fill in)
 - Connection limits, download speed limit, and archive password list
 - Optional toast when a package finishes downloading
+- HTTP webhooks for download finished and mover success/failure
 - Right-click actions on download packages, links, and link-grabber rows (rename, comment, stop-after, move, retry extract, …)
 - Retry archive extraction with a password from a package’s context menu
 - Ctrl+L (Cmd+L on macOS) opens the add-links dialog outside text fields

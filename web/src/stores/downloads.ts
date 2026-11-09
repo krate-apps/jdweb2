@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import type { DownloadLink, PackageInfo } from '@/api/jd'
 import * as jd from '@/api/jd'
 import { i18n } from '@/i18n'
+import { notifyWebhook } from '@/api/webhooks'
 import { useAppStore } from './app'
 
 export const useDownloadsStore = defineStore('downloads', () => {
@@ -39,12 +40,16 @@ export const useDownloadsStore = defineStore('downloads', () => {
     packages.value = p ?? []
     engineState.value = state ?? 'UNKNOWN'
     app.connected = true
-    if (app.showCompletionToasts) {
-      for (const pkg of packages.value) {
-        if (pkg.finished && !prevFinished.has(pkg.uuid)) {
-          app.addToast(i18n.global.t('settings.downloadComplete', { name: pkg.name }))
-        }
+    for (const pkg of packages.value) {
+      if (!pkg.finished || prevFinished.has(pkg.uuid)) continue
+      if (app.showCompletionToasts) {
+        app.addToast(i18n.global.t('settings.downloadComplete', { name: pkg.name }))
       }
+      void notifyWebhook('download.finished', {
+        uuid: pkg.uuid,
+        name: pkg.name,
+        saveTo: pkg.saveTo,
+      }).catch(() => undefined)
     }
   }
 

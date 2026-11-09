@@ -68,5 +68,10 @@ export const config = {
   showsDir: resolve(root, env('JDWEB_SHOWS_DIR', './data/library/shows')),
   otherDir: resolve(root, env('JDWEB_OTHER_DIR', './data/library/other')),
   moverIntervalMs: envInt('JDWEB_MOVER_INTERVAL_MS', 15_000),
+  /** CSV of webhook URLs seeded when the webhooks table is empty. */
+  webhookUrls: env('JDWEB_WEBHOOK_URLS', '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
   webDist: resolve(root, 'web/dist'),
 }
