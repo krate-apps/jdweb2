@@ -187,6 +187,11 @@ export default {
     currentPassword: 'Mot de passe actuel',
     changePassword: 'Changer le mot de passe',
     passwordChanged: 'Mot de passe mis à jour.',
+    sessions: 'Sessions',
+    currentSession: 'cet appareil',
+    unknownAgent: 'Client inconnu',
+    revokeSession: 'Révoquer',
+    revokeOtherSessions: 'Révoquer les autres',
   },
   context: {
     pause: 'Pause',

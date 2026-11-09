@@ -17,7 +17,9 @@ When the `users` table is empty, create the first administrator in either of the
 
 ### Session
 
-Successful login sets an HTTP-only cookie (`jdweb_session`) signed with `JDWEB_SESSION_SECRET`. The cookie path follows `JDWEB_BASE_PATH`.
+Successful login creates a server-side row in the `sessions` table and sets an HTTP-only cookie (`jdweb_session`) holding a signed session id (`JDWEB_SESSION_SECRET`). The cookie path follows `JDWEB_BASE_PATH`. Logout deletes the current session.
+
+List and revoke sessions from Settings or via `GET/DELETE /api/sessions` (and `DELETE /api/sessions/:id`).
 
 Protected routes include `/api/auth/me`, `/api/users`, `/api/hosters`, destination/mover endpoints, and the JDownloader proxy under `/api/jd/*`.
 

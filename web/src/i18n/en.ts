@@ -187,6 +187,11 @@ export default {
     currentPassword: 'Current password',
     changePassword: 'Change password',
     passwordChanged: 'Password updated.',
+    sessions: 'Sessions',
+    currentSession: 'this device',
+    unknownAgent: 'Unknown client',
+    revokeSession: 'Revoke',
+    revokeOtherSessions: 'Revoke others',
   },
   context: {
     pause: 'Pause',

@@ -7,7 +7,15 @@ import { access, mkdir } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { join } from 'node:path'
 import { config } from './config.js'
-import { clearSession, issueSession, readSession, requireAuth } from './auth.js'
+import {
+  clearSession,
+  issueSession,
+  listSessionsForUser,
+  readSession,
+  requireAuth,
+  revokeOtherSessions,
+  revokeSession,
+} from './auth.js'
 import { proxyJdRequest } from './jd.js'
 import { describeDestination, stagingPathFor, type DestinationKind } from './destinations.js'
 import { movePackageNow, startMover } from './mover.js'
@@ -34,7 +42,7 @@ import {
 } from './hosters.js'
 import { isLibraryRoot, listLibraryFolders } from './library.js'
 
-type Vars = { username: string }
+type Vars = { username: string; sessionId: string; userId: number }
 
 const app = new Hono<{ Variables: Vars }>()
 const base = config.basePath
@@ -44,22 +52,31 @@ function mount(path: string): string {
   return path === '/' ? base : `${base}${path}`
 }
 
-function isLoopback(c: Parameters<typeof getConnInfo>[0]): boolean {
+function clientIp(c: Parameters<typeof getConnInfo>[0]): string {
   const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-  let remote = forwarded ?? ''
-  if (!remote) {
-    try {
-      remote = getConnInfo(c).remote.address ?? ''
-    } catch {
-      remote = ''
-    }
+  if (forwarded) return forwarded
+  try {
+    return getConnInfo(c).remote.address ?? ''
+  } catch {
+    return ''
   }
+}
+
+function isLoopback(c: Parameters<typeof getConnInfo>[0]): boolean {
+  const remote = clientIp(c)
   return (
     remote === '127.0.0.1' ||
     remote === '::1' ||
     remote === '::ffff:127.0.0.1' ||
     remote === 'localhost'
   )
+}
+
+function sessionMeta(c: Parameters<typeof getConnInfo>[0]) {
+  return {
+    userAgent: c.req.header('user-agent') ?? undefined,
+    ip: clientIp(c) || undefined,
+  }
 }
 
 function errorStatus(message: string): ContentfulStatusCode {
@@ -105,7 +122,7 @@ app.post(mount('/api/setup/admin'), async (c) => {
   const body = (await c.req.json().catch(() => null)) as { username?: string; password?: string } | null
   try {
     const user = await createUser(body?.username ?? '', body?.password ?? '')
-    issueSession(c, user.username)
+    issueSession(c, user.username, sessionMeta(c))
     return c.json({ username: user.username })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'setup_failed'
@@ -118,7 +135,7 @@ app.post(mount('/api/auth/login'), async (c) => {
   const body = (await c.req.json().catch(() => null)) as { username?: string; password?: string } | null
   const user = await verifyLogin(body?.username ?? '', body?.password ?? '')
   if (!user) return c.json({ error: 'invalid_credentials' }, 401)
-  issueSession(c, user.username)
+  issueSession(c, user.username, sessionMeta(c))
   return c.json({ username: user.username })
 })
 
@@ -131,6 +148,31 @@ app.get(mount('/api/auth/me'), (c) => {
   const session = readSession(c)
   if (!session) return c.json({ error: 'unauthorized' }, 401)
   return c.json({ username: session.username })
+})
+
+app.get(mount('/api/sessions'), requireAuth, (c) => {
+  const currentId = c.get('sessionId')
+  const sessions = listSessionsForUser(c.get('userId')).map((s) => ({
+    id: s.id,
+    createdAt: s.createdAt,
+    lastSeenAt: s.lastSeenAt,
+    userAgent: s.userAgent,
+    ip: s.ip,
+    current: s.id === currentId,
+  }))
+  return c.json({ sessions })
+})
+
+app.delete(mount('/api/sessions/:id'), requireAuth, (c) => {
+  const id = c.req.param('id') ?? ''
+  if (!id || !revokeSession(id, c.get('userId'))) return c.json({ error: 'session_not_found' }, 404)
+  if (id === c.get('sessionId')) clearSession(c)
+  return c.json({ ok: true })
+})
+
+app.delete(mount('/api/sessions'), requireAuth, (c) => {
+  const removed = revokeOtherSessions(c.get('userId'), c.get('sessionId'))
+  return c.json({ ok: true, removed })
 })
 
 app.get(mount('/api/users'), requireAuth, (c) => c.json({ users: listUsers() }))

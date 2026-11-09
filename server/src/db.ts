@@ -50,6 +50,18 @@ const MIGRATIONS = [
   DROP TABLE hoster_accounts;
   ALTER TABLE hoster_accounts_v2 RENAME TO hoster_accounts;
   `,
+  `
+  CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    username TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_seen_at INTEGER NOT NULL,
+    user_agent TEXT,
+    ip TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+  `,
 ]
 
 export function getDb(): DatabaseSync {

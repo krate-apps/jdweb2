@@ -6,6 +6,8 @@ import { useDownloadsStore } from '@/stores/downloads'
 import * as jd from '@/api/jd'
 import * as usersApi from '@/api/users'
 import type { AppUser } from '@/api/users'
+import * as sessionsApi from '@/api/sessions'
+import type { AppSession } from '@/api/sessions'
 import { setLocale } from '@/i18n'
 import { ApiError } from '@/api/http'
 
@@ -26,6 +28,8 @@ const userError = ref<string | null>(null)
 const currentPassword = ref('')
 const myNewPassword = ref('')
 const myPasswordMsg = ref<string | null>(null)
+const sessions = ref<AppSession[]>([])
+const sessionError = ref<string | null>(null)
 const error = ref<string | null>(null)
 
 function formatErr(err: unknown): string {
@@ -80,6 +84,39 @@ async function changeMyPassword() {
   }
 }
 
+async function loadSessions() {
+  sessionError.value = null
+  try {
+    sessions.value = (await sessionsApi.listSessions()).sessions
+  } catch (err) {
+    sessionError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function revokeSession(session: AppSession) {
+  sessionError.value = null
+  try {
+    await sessionsApi.revokeSession(session.id)
+    if (session.current) {
+      window.location.reload()
+      return
+    }
+    await loadSessions()
+  } catch (err) {
+    sessionError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function revokeOthers() {
+  sessionError.value = null
+  try {
+    await sessionsApi.revokeOtherSessions()
+    await loadSessions()
+  } catch (err) {
+    sessionError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
 async function load() {
   error.value = null
   try {
@@ -88,6 +125,7 @@ async function load() {
     /* paths are optional if session is odd */
   }
   void loadUsers()
+  void loadSessions()
   try {
     maxDownloads.value = (await jd.getMaxSimultDownloads()) ?? 3
     maxChunks.value = (await jd.getMaxChunks()) ?? 1
@@ -163,6 +201,36 @@ async function removePassword(value: string) {
         </button>
       </form>
       <p v-if="myPasswordMsg" class="text-xs text-muted">{{ myPasswordMsg }}</p>
+    </section>
+
+    <section class="space-y-2">
+      <div class="flex items-center gap-2">
+        <h2 class="text-sm font-semibold text-muted mr-auto">{{ t('settings.sessions') }}</h2>
+        <button type="button" class="text-xs px-2 py-1 rounded-[10px] border border-border" @click="revokeOthers">
+          {{ t('settings.revokeOtherSessions') }}
+        </button>
+      </div>
+      <p v-if="sessionError" class="text-xs text-danger-text">{{ sessionError }}</p>
+      <ul class="space-y-1 text-xs">
+        <li
+          v-for="session in sessions"
+          :key="session.id"
+          class="flex items-start justify-between gap-2 bg-surface-2 rounded-[10px] px-2 py-1.5"
+        >
+          <div class="min-w-0">
+            <div class="text-foreground">
+              {{ session.ip || '—' }}
+              <span v-if="session.current" class="text-accent-text"> · {{ t('settings.currentSession') }}</span>
+            </div>
+            <div class="text-muted truncate" :title="session.userAgent ?? undefined">
+              {{ session.userAgent || t('settings.unknownAgent') }}
+            </div>
+          </div>
+          <button type="button" class="text-danger-text shrink-0" @click="revokeSession(session)">
+            {{ t('settings.revokeSession') }}
+          </button>
+        </li>
+      </ul>
     </section>
 
     <section class="space-y-2">
