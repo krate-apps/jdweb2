@@ -125,6 +125,25 @@ export const useDownloadsStore = defineStore('downloads', () => {
     await refresh()
   }
 
+  async function forceLinks(ids: number[]) {
+    if (!ids.length) return
+    await jd.forceDownload(ids)
+    await refresh()
+  }
+
+  async function setLinksEnabled(enabled: boolean, ids: number[]) {
+    if (!ids.length) return
+    await jd.setLinksEnabled(enabled, ids)
+    await refresh()
+  }
+
+  async function removeLinkIds(ids: number[], packageIds: number[] = []) {
+    if (!ids.length && !packageIds.length) return
+    await jd.removeLinks(ids, packageIds)
+    selected.value = new Set()
+    await refresh()
+  }
+
   return {
     links,
     packages,
@@ -147,5 +166,8 @@ export const useDownloadsStore = defineStore('downloads', () => {
     cleanFinished,
     removeSelected,
     forceSelected,
+    forceLinks,
+    setLinksEnabled,
+    removeLinkIds,
   }
 })

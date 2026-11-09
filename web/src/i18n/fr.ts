@@ -138,6 +138,12 @@ export default {
     completionToasts: 'Afficher une notification quand un paquet se termine',
     downloadComplete: 'Téléchargement terminé : {name}',
   },
+  context: {
+    pause: 'Pause',
+    resume: 'Reprendre',
+    confirm: 'Confirmer',
+    openUrl: 'Ouvrir l’URL',
+  },
   password: {
     title: 'Mot de passe d’archive',
     hint: 'Le mot de passe est ajouté à la liste de JDownloader.',

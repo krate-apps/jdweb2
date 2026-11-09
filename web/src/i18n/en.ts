@@ -138,6 +138,12 @@ export default {
     completionToasts: 'Show a toast when a package finishes',
     downloadComplete: 'Download finished: {name}',
   },
+  context: {
+    pause: 'Pause',
+    resume: 'Resume',
+    confirm: 'Confirm',
+    openUrl: 'Open URL',
+  },
   password: {
     title: 'Archive password',
     hint: 'The password is added to JDownloader’s password list.',

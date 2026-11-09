@@ -1,14 +1,48 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDownloadsStore } from '@/stores/downloads'
 import { formatEta, formatSize, formatSpeed } from '@/lib/format'
+import { getPasswordList, setPasswordList } from '@/api/jd'
 import MoveModal from '@/components/modals/MoveModal.vue'
+import ContextMenu, { type ContextMenuItem } from '@/components/ui/ContextMenu.vue'
 
 const { t } = useI18n()
 const downloads = useDownloadsStore()
 const expanded = ref<Set<number>>(new Set())
 const moveTarget = ref<{ uuid: number; saveTo?: string } | null>(null)
+const passwordTarget = ref<number | null>(null)
+const passwordValue = ref('')
+const passwordBusy = ref(false)
+const passwordError = ref<string | null>(null)
+
+const menu = ref<{
+  visible: boolean
+  x: number
+  y: number
+  type: 'package' | 'link'
+  uuid: number
+} | null>(null)
+
+const menuItems = computed<ContextMenuItem[]>(() => {
+  if (!menu.value) return []
+  if (menu.value.type === 'package') {
+    return [
+      { id: 'force', label: t('downloads.force') },
+      { id: 'resume', label: t('downloads.resumeAll') },
+      { id: 'pause', label: t('downloads.pauseAll') },
+      { id: 'move', label: t('downloads.move') },
+      { id: 'password', label: t('password.title') },
+      { id: 'remove', label: t('common.remove'), danger: true },
+    ]
+  }
+  return [
+    { id: 'force', label: t('downloads.force') },
+    { id: 'resume', label: t('context.resume') },
+    { id: 'pause', label: t('context.pause') },
+    { id: 'remove', label: t('common.remove'), danger: true },
+  ]
+})
 
 function toggleExpand(uuid: number) {
   const next = new Set(expanded.value)
@@ -29,10 +63,70 @@ function progress(loaded?: number, total?: number) {
   if (!total || total <= 0) return 0
   return Math.min(100, Math.round(((loaded ?? 0) / total) * 100))
 }
+
+function showMenu(event: MouseEvent, type: 'package' | 'link', uuid: number) {
+  menu.value = { visible: true, x: event.clientX, y: event.clientY, type, uuid }
+}
+
+function hideMenu() {
+  menu.value = null
+}
+
+function linkIdsForPackage(pkgUuid: number) {
+  return downloads.linksForPackage(pkgUuid).map((l) => l.uuid)
+}
+
+async function onMenuSelect(action: string) {
+  const current = menu.value
+  hideMenu()
+  if (!current) return
+  const { type, uuid } = current
+
+  if (type === 'package') {
+    const ids = linkIdsForPackage(uuid)
+    const pkg = downloads.packages.find((p) => p.uuid === uuid)
+    if (action === 'move') {
+      moveTarget.value = { uuid, saveTo: pkg?.saveTo }
+      return
+    }
+    if (action === 'password') {
+      passwordTarget.value = uuid
+      passwordValue.value = ''
+      passwordError.value = null
+      return
+    }
+    if (action === 'force') await downloads.forceLinks(ids)
+    else if (action === 'resume') await downloads.setLinksEnabled(true, ids)
+    else if (action === 'pause') await downloads.setLinksEnabled(false, ids)
+    else if (action === 'remove') await downloads.removeLinkIds([], [uuid])
+    return
+  }
+
+  if (action === 'force') await downloads.forceLinks([uuid])
+  else if (action === 'resume') await downloads.setLinksEnabled(true, [uuid])
+  else if (action === 'pause') await downloads.setLinksEnabled(false, [uuid])
+  else if (action === 'remove') await downloads.removeLinkIds([uuid])
+}
+
+async function submitPackagePassword() {
+  const value = passwordValue.value.trim()
+  if (!value || passwordTarget.value == null) return
+  passwordBusy.value = true
+  passwordError.value = null
+  try {
+    const list = (await getPasswordList()) ?? []
+    if (!list.includes(value)) await setPasswordList([...list, value])
+    passwordTarget.value = null
+  } catch (err) {
+    passwordError.value = err instanceof Error ? err.message : t('common.error')
+  } finally {
+    passwordBusy.value = false
+  }
+}
 </script>
 
 <template>
-  <div class="p-3 overflow-x-auto">
+  <div class="p-3 overflow-x-auto" @click="hideMenu">
     <table class="w-full text-sm border-collapse min-w-[720px]">
       <thead>
         <tr class="text-left text-xs text-muted border-b border-border">
@@ -50,7 +144,10 @@ function progress(loaded?: number, total?: number) {
       </thead>
       <tbody>
         <template v-for="pkg in downloads.packages" :key="pkg.uuid">
-          <tr class="border-b border-border/60 hover:bg-surface-2/60">
+          <tr
+            class="border-b border-border/60 hover:bg-surface-2/60"
+            @contextmenu.prevent="showMenu($event, 'package', pkg.uuid)"
+          >
             <td class="py-1.5">
               <button type="button" class="text-muted px-1" @click="toggleExpand(pkg.uuid)">
                 {{ expanded.has(pkg.uuid) ? '▾' : '▸' }}
@@ -89,6 +186,7 @@ function progress(loaded?: number, total?: number) {
             v-for="link in expanded.has(pkg.uuid) ? downloads.linksForPackage(pkg.uuid) : []"
             :key="link.uuid"
             class="bg-surface/40 border-b border-border/40 text-xs"
+            @contextmenu.prevent="showMenu($event, 'link', link.uuid)"
           >
             <td class="py-1 pl-2">
               <input
@@ -131,11 +229,46 @@ function progress(loaded?: number, total?: number) {
       </button>
     </div>
 
+    <ContextMenu
+      v-if="menu?.visible"
+      :x="menu.x"
+      :y="menu.y"
+      :items="menuItems"
+      @select="onMenuSelect"
+      @close="hideMenu"
+    />
+
     <MoveModal
       v-if="moveTarget"
       :package-uuid="moveTarget.uuid"
       :current-save-to="moveTarget.saveTo"
       @close="moveTarget = null"
     />
+
+    <div
+      v-if="passwordTarget != null"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      @click.self="passwordTarget = null"
+    >
+      <form class="w-full max-w-sm rounded-[14px] bg-surface border border-border p-4 space-y-3" @submit.prevent="submitPackagePassword">
+        <h2 class="font-semibold">{{ t('password.title') }}</h2>
+        <p class="text-xs text-muted">{{ t('password.hint') }}</p>
+        <input
+          v-model="passwordValue"
+          type="password"
+          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
+          autofocus
+        />
+        <p v-if="passwordError" class="text-xs text-danger-text">{{ passwordError }}</p>
+        <div class="flex justify-end gap-2">
+          <button type="button" class="px-3 py-1.5 rounded-[10px] border border-border" @click="passwordTarget = null">
+            {{ t('common.cancel') }}
+          </button>
+          <button type="submit" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg" :disabled="passwordBusy">
+            {{ t('password.submit') }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
