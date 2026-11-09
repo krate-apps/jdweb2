@@ -29,6 +29,27 @@ const MIGRATIONS = [
     UNIQUE(hoster, username)
   );
   `,
+  `
+  CREATE TABLE hoster_accounts_v2 (
+    id INTEGER PRIMARY KEY,
+    hoster TEXT NOT NULL,
+    username TEXT NOT NULL,
+    password_ciphertext BLOB,
+    password_iv BLOB,
+    password_tag BLOB,
+    jd_uuid INTEGER,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(hoster, username)
+  );
+  INSERT INTO hoster_accounts_v2
+    (id, hoster, username, password_ciphertext, password_iv, password_tag, jd_uuid, enabled, created_at, updated_at)
+  SELECT id, hoster, username, password_ciphertext, password_iv, password_tag, jd_uuid, enabled, created_at, updated_at
+  FROM hoster_accounts;
+  DROP TABLE hoster_accounts;
+  ALTER TABLE hoster_accounts_v2 RENAME TO hoster_accounts;
+  `,
 ]
 
 export function getDb(): DatabaseSync {

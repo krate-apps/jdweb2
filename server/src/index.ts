@@ -24,6 +24,7 @@ import {
 import {
   createHoster,
   deleteHoster,
+  importHostersFromJd,
   listHosters,
   refreshHosters,
   resyncHoster,
@@ -236,6 +237,14 @@ app.post(mount('/api/hosters/refresh'), requireAuth, async (c) => {
     return c.json({ hosters: await refreshHosters() })
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : 'refresh_failed' }, 500)
+  }
+})
+
+app.post(mount('/api/hosters/import'), requireAuth, async (c) => {
+  try {
+    return c.json(await importHostersFromJd())
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'import_failed' }, 500)
   }
 })
 

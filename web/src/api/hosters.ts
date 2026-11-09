@@ -6,6 +6,7 @@ export interface HosterAccount {
   username: string
   enabled: boolean
   jdUuid: number | null
+  needsSecret: boolean
   createdAt: number
   updatedAt: number
   valid?: boolean
@@ -48,4 +49,10 @@ export function refreshHosters() {
 
 export function resyncHoster(id: number) {
   return apiJson<HosterAccount>(`api/hosters/${id}/resync`, { method: 'POST' })
+}
+
+export function importHosters() {
+  return apiJson<{ imported: number; skipped: number; hosters: HosterAccount[] }>('api/hosters/import', {
+    method: 'POST',
+  })
 }

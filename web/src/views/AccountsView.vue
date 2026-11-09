@@ -60,8 +60,25 @@ async function refreshAll() {
 }
 
 async function resync(account: HosterAccount) {
+  if (account.needsSecret) {
+    error.value = t('accounts.passwordRequired')
+    return
+  }
   await hostersApi.resyncHoster(account.id)
   await refresh()
+}
+
+async function importFromJd() {
+  error.value = null
+  busy.value = true
+  try {
+    const res = await hostersApi.importHosters()
+    accounts.value = res.hosters
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : t('common.error')
+  } finally {
+    busy.value = false
+  }
 }
 </script>
 
@@ -69,6 +86,9 @@ async function resync(account: HosterAccount) {
   <div class="p-3 space-y-4 max-w-4xl">
     <div class="flex flex-wrap gap-2 items-center">
       <h1 class="text-lg font-semibold mr-auto">{{ t('accounts.title') }}</h1>
+      <button type="button" class="px-2 py-1 text-sm rounded-[10px] border border-border" :disabled="busy" @click="importFromJd">
+        {{ t('accounts.import') }}
+      </button>
       <button type="button" class="px-2 py-1 text-sm rounded-[10px] border border-border" @click="refreshAll">
         {{ t('accounts.refresh') }}
       </button>
@@ -76,6 +96,7 @@ async function resync(account: HosterAccount) {
         {{ t('accounts.add') }}
       </button>
     </div>
+    <p v-if="error && !showForm" class="text-xs text-danger-text">{{ error }}</p>
 
     <form v-if="showForm" class="rounded-[14px] border border-border bg-surface p-3 space-y-3" @submit.prevent="add">
       <div class="grid sm:grid-cols-3 gap-2">
@@ -116,7 +137,8 @@ async function resync(account: HosterAccount) {
           <td class="py-1.5 text-muted">
             {{ account.status || (account.valid ? 'OK' : '—') }}
             <span v-if="account.errorString" class="text-danger-text" :title="account.errorString"> (!)</span>
-            <span v-if="account.jdUuid == null" class="text-xs text-muted"> · {{ t('accounts.notSynced') }}</span>
+            <span v-if="account.needsSecret" class="text-xs text-danger-text"> · {{ t('accounts.passwordRequired') }}</span>
+            <span v-else-if="account.jdUuid == null" class="text-xs text-muted"> · {{ t('accounts.notSynced') }}</span>
           </td>
           <td class="py-1.5 hidden sm:table-cell">
             {{ account.trafficLeft != null ? formatSize(account.trafficLeft) : '—' }}

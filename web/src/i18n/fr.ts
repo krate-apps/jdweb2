@@ -153,6 +153,9 @@ export default {
     removeConfirm: 'Supprimer ce compte ?',
     notSynced: 'absent de JD',
     resync: 'Resync',
+    import: 'Importer depuis JD',
+    passwordRequired: 'mot de passe requis',
+    changePassword: 'Changer le mot de passe',
   },
   settings: {
     title: 'Réglages',

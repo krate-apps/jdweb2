@@ -17,7 +17,7 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 - Multi-user SQLite auth (argon2id); first admin via env seed or localhost setup API
 - Download list with package and link details, filters/sort, and cleanup of finished/failed/offline items
 - Link grabber (add URLs, confirm into the download list)
-- Premium hoster accounts stored encrypted in SQLite and synced to JDownloader
+- Premium hoster accounts stored encrypted in SQLite and synced to JDownloader (import from JD leaves password to fill in)
 - Connection limits, download speed limit, and archive password list
 - Optional toast when a package finishes downloading
 - Right-click actions on download packages, links, and link-grabber rows (rename, comment, stop-after, move, retry extract, …)

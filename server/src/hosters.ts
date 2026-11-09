@@ -6,9 +6,9 @@ export interface HosterRow {
   id: number
   hoster: string
   username: string
-  password_ciphertext: Buffer
-  password_iv: Buffer
-  password_tag: Buffer
+  password_ciphertext: Buffer | null
+  password_iv: Buffer | null
+  password_tag: Buffer | null
   jd_uuid: number | null
   enabled: number
   created_at: number
@@ -21,6 +21,7 @@ export interface HosterPublic {
   username: string
   enabled: boolean
   jdUuid: number | null
+  needsSecret: boolean
   createdAt: number
   updatedAt: number
   valid?: boolean
@@ -42,6 +43,10 @@ interface JdAccount {
   status?: string
 }
 
+function hasSecret(row: HosterRow): boolean {
+  return Boolean(row.password_ciphertext && row.password_iv && row.password_tag)
+}
+
 function toPublic(row: HosterRow, jd?: JdAccount): HosterPublic {
   return {
     id: row.id,
@@ -49,6 +54,7 @@ function toPublic(row: HosterRow, jd?: JdAccount): HosterPublic {
     username: row.username,
     enabled: Boolean(row.enabled),
     jdUuid: row.jd_uuid,
+    needsSecret: !hasSecret(row),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     valid: jd?.valid,
@@ -60,10 +66,11 @@ function toPublic(row: HosterRow, jd?: JdAccount): HosterPublic {
 }
 
 function plaintextOf(row: HosterRow): string {
+  if (!hasSecret(row)) throw new Error('password_required')
   return decryptSecret({
-    ciphertext: row.password_ciphertext,
-    iv: row.password_iv,
-    tag: row.password_tag,
+    ciphertext: row.password_ciphertext!,
+    iv: row.password_iv!,
+    tag: row.password_tag!,
   })
 }
 
@@ -162,6 +169,39 @@ export async function createHoster(input: {
   return toPublic(row, jd)
 }
 
+/** Import JD accounts missing from SQLite (secrets must be filled later). */
+export async function importHostersFromJd(): Promise<{ imported: number; skipped: number; hosters: HosterPublic[] }> {
+  const jdAccounts = await listJdAccounts()
+  const existing = getDb()
+    .prepare('SELECT hoster, username, jd_uuid FROM hoster_accounts')
+    .all() as unknown as { hoster: string; username: string; jd_uuid: number | null }[]
+  const byKey = new Set(existing.map((e) => `${e.hoster.toLowerCase()}::${e.username.toLowerCase()}`))
+  const byUuid = new Set(existing.map((e) => e.jd_uuid).filter((u): u is number => u != null))
+
+  let imported = 0
+  let skipped = 0
+  const now = Date.now()
+  const insert = getDb().prepare(
+    `INSERT INTO hoster_accounts
+      (hoster, username, password_ciphertext, password_iv, password_tag, jd_uuid, enabled, created_at, updated_at)
+     VALUES (?, ?, NULL, NULL, NULL, ?, ?, ?, ?)`,
+  )
+
+  for (const acc of jdAccounts) {
+    const key = `${acc.hostname.toLowerCase()}::${acc.username.toLowerCase()}`
+    if (byKey.has(key) || byUuid.has(acc.uuid)) {
+      skipped++
+      continue
+    }
+    insert.run(acc.hostname, acc.username, acc.uuid, acc.enabled ? 1 : 0, now, now)
+    byKey.add(key)
+    byUuid.add(acc.uuid)
+    imported++
+  }
+
+  return { imported, skipped, hosters: await listHosters() }
+}
+
 export async function setHosterEnabled(id: number, enabled: boolean): Promise<HosterPublic> {
   const row = findById(id)
   if (!row) throw new Error('hoster_not_found')
@@ -190,7 +230,11 @@ export async function updateHosterPassword(id: number, password: string): Promis
     .run(enc.ciphertext, enc.iv, enc.tag, Date.now(), id)
 
   if (row.jd_uuid != null) {
-    await jdCall('/accountsV2/removeAccounts', [row.jd_uuid])
+    try {
+      await jdCall('/accountsV2/removeAccounts', [row.jd_uuid])
+    } catch {
+      /* ignore */
+    }
   }
   await jdCall('/accountsV2/addAccount', row.hoster, row.username, password)
   const jdUuid = await resolveJdUuid(row.hoster, row.username)

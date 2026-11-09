@@ -153,6 +153,9 @@ export default {
     removeConfirm: 'Remove this account?',
     notSynced: 'not in JD',
     resync: 'Resync',
+    import: 'Import from JD',
+    passwordRequired: 'password required',
+    changePassword: 'Change password',
   },
   settings: {
     title: 'Settings',
