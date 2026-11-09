@@ -4,7 +4,7 @@ All settings are environment variables. A template is provided in `.env.example`
 
 | Variable | Meaning |
 |----------|---------|
-| `JDWEB_HOST` | Address the server binds to (default `127.0.0.1`) |
+| `JDWEB_HOST` | Address the server binds to (`127.0.0.1` local-only; `0.0.0.0` for remote access) |
 | `JDWEB_PORT` | Port (default `8787`) |
 | `JDWEB_BASE_PATH` | Public URL prefix without trailing slash (`/jdweb`, `/alice/jdweb`, or empty) |
 | `JDWEB_USER` | Login username |

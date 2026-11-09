@@ -43,8 +43,13 @@ export async function proxyJdRequest(path: string, rawBody: string | undefined):
       body: rawBody && rawBody.length > 0 ? rawBody : '{"params":[]}',
     })
   } catch (err) {
+    const detail = err instanceof Error ? err.message : 'unreachable'
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : 'JDownloader unreachable' }),
+      JSON.stringify({
+        error: 'jdownloader_unreachable',
+        detail,
+        jdApiUrl: config.jdApiUrl,
+      }),
       { status: 503, headers: { 'Content-Type': 'application/json' } },
     )
   }

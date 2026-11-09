@@ -27,6 +27,17 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
+function errorMessageFromBody(raw: string, fallback: string): string {
+  try {
+    const parsed = JSON.parse(raw) as { error?: string }
+    if (parsed?.error) return parsed.error
+  } catch {
+    /* plain text */
+  }
+  const trimmed = raw.trim()
+  return trimmed || fallback
+}
+
 /** Call JDownloader through the authenticated jdweb proxy. */
 export async function jdCall<T>(jdPath: string, ...params: unknown[]): Promise<T> {
   const path = jdPath.startsWith('/') ? jdPath : `/${jdPath}`
@@ -37,7 +48,10 @@ export async function jdCall<T>(jdPath: string, ...params: unknown[]): Promise<T
     body: JSON.stringify({ params }),
   })
   if (!response.ok) {
-    throw new ApiError(response.status, await response.text())
+    const raw = await response.text()
+    const detail = errorMessageFromBody(raw, response.statusText)
+    const offline = response.status === 503 || /fetch failed|unreachable|ECONNREFUSED/i.test(detail)
+    throw new ApiError(response.status, offline ? 'jdownloader_unreachable' : detail)
   }
   const body = (await response.json()) as { data: T }
   return body.data

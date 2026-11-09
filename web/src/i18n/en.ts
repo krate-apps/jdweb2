@@ -38,6 +38,8 @@ export default {
     empty: 'Nothing here yet.',
     optional: 'optional',
     error: 'Something went wrong',
+    jdOffline:
+      'JDownloader is not reachable. Start it with the local HTTP API enabled, then check JD_API_URL in .env (default http://127.0.0.1:3128).',
   },
   destination: {
     label: 'Destination',
@@ -75,6 +77,13 @@ export default {
     links: 'Links',
     remaining: 'Remaining',
     connections: 'Connections',
+    speedLimit: 'Speed limit',
+    speedLimitOff: 'Speed limit (unlimited)',
+    speedLimitOn: 'Speed limit: {n} KB/s',
+    speedLimitTitle: 'Download speed limit',
+    speedLimitUnlimited: 'Unlimited',
+    speedLimitApply: 'Apply',
+    speedLimitPlaceholder: '0 = unlimited',
   },
   grabber: {
     title: 'Link grabber',

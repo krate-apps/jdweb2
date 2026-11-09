@@ -22,6 +22,8 @@ interface ArchiveInfo {
 
 let timer: ReturnType<typeof setInterval> | null = null
 let running = false
+/** Avoid spamming the console while JDownloader is offline. */
+let jdReachable: boolean | null = null
 
 export function startMover(): void {
   if (config.moverIntervalMs <= 0) return
@@ -40,8 +42,21 @@ async function tick(): Promise<void> {
   running = true
   try {
     await processFinishedPackages()
+    if (jdReachable === false) {
+      console.log('[mover] JDownloader is reachable again')
+    }
+    jdReachable = true
   } catch (err) {
-    console.error('[mover]', err instanceof Error ? err.message : err)
+    const message = err instanceof Error ? err.message : String(err)
+    const offline = /fetch failed|unreachable|ECONNREFUSED|ENOTFOUND|503/i.test(message)
+    if (offline) {
+      if (jdReachable !== false) {
+        console.warn(`[mover] JDownloader unreachable (${config.jdApiUrl}); will keep trying quietly`)
+      }
+      jdReachable = false
+    } else {
+      console.error('[mover]', message)
+    }
   } finally {
     running = false
   }

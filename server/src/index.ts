@@ -1,7 +1,8 @@
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
-import { mkdir } from 'node:fs/promises'
+import { access, mkdir } from 'node:fs/promises'
+import { constants } from 'node:fs'
 import { join } from 'node:path'
 import { config } from './config.js'
 import {
@@ -135,51 +136,54 @@ async function ensureDirs(): Promise<void> {
   }
 }
 
+async function hasWebDist(): Promise<boolean> {
+  try {
+    await access(join(config.webDist, 'index.html'), constants.R_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function main() {
   await ensureDirs()
   startMover()
 
   const staticRoot = config.webDist
-  // serveStatic resolves paths from process.cwd(); prefer repo-root relative path.
-  const staticRootRel = 'web/dist'
-  app.use(
-    `${base || ''}/*`,
-    serveStatic({
-      root: staticRootRel,
-      rewriteRequestPath: (path) => {
-        const stripped = base && path.startsWith(base) ? path.slice(base.length) || '/' : path
-        return stripped.replace(/^\/+/, '') || 'index.html'
-      },
-    }),
-  )
+  const uiBuilt = await hasWebDist()
 
-  app.get(mount('/'), async (c) => {
-    try {
+  if (uiBuilt) {
+    // Absolute root: pnpm --filter runs with cwd=server/, so "web/dist" would miss.
+    app.use(
+      `${base || ''}/*`,
+      serveStatic({
+        root: staticRoot,
+        rewriteRequestPath: (path) => {
+          const stripped = base && path.startsWith(base) ? path.slice(base.length) || '/' : path
+          return stripped.replace(/^\/+/, '') || 'index.html'
+        },
+      }),
+    )
+
+    app.get(mount('/'), async (c) => {
       const { readFile } = await import('node:fs/promises')
       let html = await readFile(join(staticRoot, 'index.html'), 'utf8')
       if (base) {
-        html = html.replaceAll('="/', `("${base}/`).replaceAll("('/", `('${base}/`)
+        html = html.replaceAll('("/', `("${base}/`).replaceAll("('/", `('${base}/`)
       }
       return c.html(html)
-    } catch {
-      return c.text(
-        'jdweb UI is not built yet. Run `pnpm --filter ./web build` or `pnpm dev:web` during development.',
-        503,
-      )
-    }
-  })
+    })
 
-  // SPA fallback for client routes
-  app.get(`${base || ''}/*`, async (c) => {
-    try {
+    app.get(`${base || ''}/*`, async (c) => {
       const { readFile } = await import('node:fs/promises')
       return c.html(await readFile(join(staticRoot, 'index.html'), 'utf8'))
-    } catch {
-      return c.text('Not found', 404)
-    }
-  })
+    })
+  }
 
   console.log(`jdweb listening on http://${config.host}:${config.port}${base || '/'}`)
+  if (!uiBuilt) {
+    console.log('web/dist missing — API only; use Vite at http://127.0.0.1:5173/ during development')
+  }
   serve({ fetch: app.fetch, hostname: config.host, port: config.port })
 }
 

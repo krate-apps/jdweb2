@@ -17,7 +17,23 @@ const app = useAppStore()
 const downloads = useDownloadsStore()
 const router = useRouter()
 const passwordDialogId = ref<number | null>(null)
+const showSpeedPopover = ref(false)
+const speedInputKbps = ref(0)
 let dialogTimer: ReturnType<typeof setInterval> | null = null
+
+function openSpeedPopover() {
+  speedInputKbps.value = Math.round(app.speedLimit / 1024)
+  showSpeedPopover.value = true
+}
+
+async function applySpeedLimit() {
+  await app.applySpeedLimit(speedInputKbps.value * 1024)
+  showSpeedPopover.value = false
+}
+
+function onSpeedEscape(e: KeyboardEvent) {
+  if (e.key === 'Escape') showSpeedPopover.value = false
+}
 
 async function pollDialogs() {
   try {
@@ -37,6 +53,7 @@ async function pollDialogs() {
 onMounted(async () => {
   downloads.startPolling()
   await app.checkConnection()
+  void app.fetchSpeedLimit()
   try {
     await app.loadPublicConfig()
   } catch {
@@ -44,11 +61,13 @@ onMounted(async () => {
   }
   void pollDialogs()
   dialogTimer = setInterval(() => void pollDialogs(), 4000)
+  document.addEventListener('keydown', onSpeedEscape)
 })
 
 onUnmounted(() => {
   downloads.stopPolling()
   if (dialogTimer) clearInterval(dialogTimer)
+  document.removeEventListener('keydown', onSpeedEscape)
 })
 
 async function onLogout() {
@@ -113,7 +132,7 @@ async function onLogout() {
       </div>
     </header>
 
-    <div class="border-b border-border bg-surface-2 px-3 py-1.5 flex flex-wrap gap-2 items-center text-sm">
+    <div class="relative border-b border-border bg-surface-2 px-3 py-1.5 flex flex-wrap gap-2 items-center text-sm">
       <button
         type="button"
         class="px-2 py-1 rounded-[10px] bg-primary text-primary-fg"
@@ -138,6 +157,53 @@ async function onLogout() {
       >
         {{ t('downloads.addLinks') }}
       </button>
+      <button
+        type="button"
+        class="px-2 py-1 rounded-[10px] border border-border"
+        :class="app.speedLimit > 0 ? 'bg-primary/20 text-accent-text' : 'bg-surface'"
+        :title="app.speedLimit > 0 ? t('downloads.speedLimitOn', { n: Math.round(app.speedLimit / 1024) }) : t('downloads.speedLimitOff')"
+        @click="openSpeedPopover"
+      >
+        {{ t('downloads.speedLimit') }}
+      </button>
+      <div
+        v-if="showSpeedPopover"
+        class="absolute top-full left-3 z-50 mt-1 min-w-52 rounded-[14px] border border-border bg-surface p-3 shadow-lg"
+        @click.stop
+      >
+        <div class="text-xs font-semibold mb-2">{{ t('downloads.speedLimitTitle') }}</div>
+        <div class="flex items-center gap-2 mb-2">
+          <input
+            v-model.number="speedInputKbps"
+            type="number"
+            min="0"
+            step="100"
+            class="w-24 bg-input border border-border rounded-[10px] px-2 py-1 text-xs"
+            :placeholder="t('downloads.speedLimitPlaceholder')"
+            @keydown.enter="applySpeedLimit"
+          />
+          <span class="text-xs text-muted">KB/s</span>
+        </div>
+        <input
+          v-model.number="speedInputKbps"
+          type="range"
+          min="0"
+          max="102400"
+          step="512"
+          class="w-full mb-2"
+        />
+        <div class="text-xs text-muted mb-3">
+          {{ speedInputKbps === 0 ? t('downloads.speedLimitUnlimited') : `${speedInputKbps} KB/s` }}
+        </div>
+        <div class="flex gap-2">
+          <button type="button" class="flex-1 px-2 py-1 text-xs rounded-[10px] bg-primary text-primary-fg" @click="applySpeedLimit">
+            {{ t('downloads.speedLimitApply') }}
+          </button>
+          <button type="button" class="flex-1 px-2 py-1 text-xs rounded-[10px] border border-border" @click="showSpeedPopover = false">
+            {{ t('common.cancel') }}
+          </button>
+        </div>
+      </div>
       <span class="ml-auto text-muted tabular-nums">{{ formatSpeed(downloads.totalSpeed) }}</span>
     </div>
 

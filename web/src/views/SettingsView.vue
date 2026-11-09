@@ -18,16 +18,28 @@ const passwords = ref<string[]>([])
 const newPassword = ref('')
 const error = ref<string | null>(null)
 
+function formatErr(err: unknown): string {
+  const message = err instanceof Error ? err.message : ''
+  if (message === 'jdownloader_unreachable' || /fetch failed|unreachable/i.test(message)) {
+    return t('common.jdOffline')
+  }
+  return message || t('common.error')
+}
+
 async function load() {
   error.value = null
+  try {
+    await app.loadPublicConfig()
+  } catch {
+    /* paths are optional if session is odd */
+  }
   try {
     maxDownloads.value = (await jd.getMaxSimultDownloads()) ?? 3
     maxChunks.value = (await jd.getMaxChunks()) ?? 1
     maxPerHost.value = (await jd.getMaxPerHost()) ?? 1
     passwords.value = (await jd.getPasswordList()) ?? []
-    await app.loadPublicConfig()
   } catch (err) {
-    error.value = err instanceof Error ? err.message : t('common.error')
+    error.value = formatErr(err)
   }
 }
 

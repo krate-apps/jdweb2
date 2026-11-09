@@ -17,7 +17,7 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 - Download list with package and link details
 - Link grabber (add URLs, confirm into the download list)
 - Premium account management
-- Connection limits and archive password list
+- Connection limits, download speed limit, and archive password list
 - Destinations: Movies, Series, Other
 - Optional automatic mover from staging folders into a library
 - English and French interface
