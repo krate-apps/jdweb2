@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -11,7 +11,9 @@ import {
   Moon,
   Pause,
   Play,
+  MessageCircleWarning,
   Plus,
+  RefreshCw,
   Settings,
   Square,
   Sun,
@@ -23,12 +25,15 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
+import { useRealtimeStore } from '@/stores/realtime'
 import { formatSize, formatSpeed } from '@/lib/format'
 import { setLocale } from '@/i18n'
-import { CONTAINER_EXTENSIONS, getDialog, listDialogs } from '@/api/jd'
+import { CONTAINER_EXTENSIONS } from '@/api/jd'
 import AddLinksModal from '@/components/modals/AddLinksModal.vue'
 import AboutModal from '@/components/modals/AboutModal.vue'
 import PasswordModal from '@/components/modals/PasswordModal.vue'
+import CaptchaModal from '@/components/modals/CaptchaModal.vue'
+import DialogPromptModal from '@/components/modals/DialogPromptModal.vue'
 import BrandMark from '@/components/ui/BrandMark.vue'
 import ToastNotification from '@/components/ui/ToastNotification.vue'
 
@@ -36,13 +41,28 @@ const { t, locale } = useI18n()
 const auth = useAuthStore()
 const app = useAppStore()
 const downloads = useDownloadsStore()
+const realtime = useRealtimeStore()
 const router = useRouter()
 const passwordDialogId = ref<number | null>(null)
+const captchaDialog = ref<{ id: number; type: string; properties?: Record<string, string> } | null>(null)
+const genericDialog = ref<{ id: number; type: string; properties?: Record<string, string> } | null>(null)
 const showSpeedPopover = ref(false)
 const speedInputKbps = ref(0)
 const draggingDlc = ref(false)
 let dragDepth = 0
-let dialogTimer: ReturnType<typeof setInterval> | null = null
+
+watch(
+  () => realtime.dialogs,
+  (list) => {
+    const password = list.find((d) => /password/i.test(d.type))
+    const captcha = list.find((d) => /captcha/i.test(d.type))
+    const other = list.find((d) => !/password/i.test(d.type) && !/captcha/i.test(d.type))
+    passwordDialogId.value = password?.id ?? null
+    captchaDialog.value = captcha ?? null
+    genericDialog.value = other && !password && !captcha ? other : null
+  },
+  { deep: true },
+)
 
 const navItems = computed(() => [
   { name: 'downloads' as const, label: t('nav.downloads'), icon: Download },
@@ -113,23 +133,8 @@ function onWindowDrop(event: DragEvent) {
   else app.addToast(t('addLinks.dlcOnly'))
 }
 
-async function pollDialogs() {
-  try {
-    const ids = (await listDialogs()) ?? []
-    for (const id of ids) {
-      const dialog = await getDialog(id)
-      if (/password/i.test(dialog.type ?? '')) {
-        passwordDialogId.value = id
-        return
-      }
-    }
-  } catch {
-    /* ignore while JD is offline */
-  }
-}
-
 onMounted(async () => {
-  downloads.startPolling()
+  realtime.connect()
   await app.checkConnection()
   void app.fetchSpeedLimit()
   try {
@@ -137,8 +142,6 @@ onMounted(async () => {
   } catch {
     /* public config requires a warm session */
   }
-  void pollDialogs()
-  dialogTimer = setInterval(() => void pollDialogs(), 4000)
   document.addEventListener('keydown', onGlobalKeydown)
   window.addEventListener('dragenter', onDragEnter)
   window.addEventListener('dragover', onDragOver)
@@ -147,8 +150,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  downloads.stopPolling()
-  if (dialogTimer) clearInterval(dialogTimer)
+  realtime.disconnect()
   document.removeEventListener('keydown', onGlobalKeydown)
   window.removeEventListener('dragenter', onDragEnter)
   window.removeEventListener('dragover', onDragOver)
@@ -163,7 +165,7 @@ async function onLogout() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col text-foreground">
+  <div class="min-h-screen flex flex-col text-foreground pb-16 md:pb-0">
     <header class="sticky top-0 z-40 border-b border-border/70 bg-surface/80 backdrop-blur-xl px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-2 shadow-[0_1px_0_rgba(255,255,255,0.04)]">
       <RouterLink
         :to="{ name: 'downloads' }"
@@ -173,7 +175,7 @@ async function onLogout() {
         <BrandMark :size="22" />
       </RouterLink>
 
-      <nav class="flex flex-wrap gap-1 text-sm">
+      <nav class="hidden md:flex flex-wrap gap-1 text-sm">
         <RouterLink
           v-for="item in navItems"
           :key="item.name"
@@ -189,11 +191,34 @@ async function onLogout() {
       <div class="ml-auto flex items-center gap-1.5 sm:gap-2 text-xs">
         <span
           class="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-[10px] bg-surface-2"
-          :title="app.connected ? t('app.connected') : t('app.disconnected')"
+          :title="
+            app.connected
+              ? t('app.connected')
+              : app.lastJdError
+                ? t('app.disconnectedDetail', { detail: app.lastJdError })
+                : t('app.disconnected')
+          "
         >
           <Wifi v-if="app.connected" class="size-3.5 text-state-seed" aria-hidden="true" />
           <WifiOff v-else class="size-3.5 text-state-error" aria-hidden="true" />
           <span class="hidden sm:inline">{{ app.connected ? t('app.connected') : t('app.disconnected') }}</span>
+        </span>
+        <button
+          type="button"
+          class="inline-flex items-center justify-center size-8 rounded-[10px] border border-border text-muted hover:bg-surface-2 hover:text-foreground"
+          :title="t('app.retryJd')"
+          :aria-label="t('app.retryJd')"
+          @click="app.checkConnection()"
+        >
+          <RefreshCw class="size-3.5" aria-hidden="true" />
+        </button>
+        <span
+          v-if="realtime.dialogs.length"
+          class="inline-flex items-center gap-1 px-2 py-1.5 rounded-[10px] bg-primary/15 text-accent-text"
+          :title="t('dialog.pending', { n: realtime.dialogs.length })"
+        >
+          <MessageCircleWarning class="size-3.5" aria-hidden="true" />
+          <span class="tabular-nums">{{ realtime.dialogs.length }}</span>
         </span>
 
         <select
@@ -355,7 +380,23 @@ async function onLogout() {
       <RouterView />
     </main>
 
-    <footer class="border-t border-border/70 bg-surface/75 backdrop-blur-md px-3 sm:px-4 py-2 text-xs text-muted flex flex-wrap gap-x-4 gap-y-1 items-center">
+    <nav
+      class="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/70 bg-surface/90 backdrop-blur-xl px-2 py-1.5 flex justify-around gap-1"
+      :aria-label="t('app.name')"
+    >
+      <RouterLink
+        v-for="item in navItems"
+        :key="item.name"
+        :to="{ name: item.name }"
+        class="flex flex-col items-center gap-0.5 px-2 py-1 rounded-[10px] text-[10px] text-muted min-w-0 flex-1"
+        active-class="!text-accent-text !bg-primary/10"
+      >
+        <component :is="item.icon" class="size-4 shrink-0" aria-hidden="true" />
+        <span class="truncate max-w-full">{{ item.label }}</span>
+      </RouterLink>
+    </nav>
+
+    <footer class="hidden md:flex border-t border-border/70 bg-surface/75 backdrop-blur-md px-3 sm:px-4 py-2 text-xs text-muted flex-wrap gap-x-4 gap-y-1 items-center">
       <span>{{ t('downloads.packages') }}: {{ downloads.packages.length }}</span>
       <span>{{ t('downloads.links') }}: {{ downloads.links.length }}</span>
       <span>{{ t('downloads.speed') }}: {{ formatSpeed(downloads.totalSpeed) }}</span>
@@ -379,6 +420,20 @@ async function onLogout() {
       v-if="passwordDialogId != null"
       :dialog-id="passwordDialogId"
       @close="passwordDialogId = null"
+    />
+    <CaptchaModal
+      v-if="captchaDialog"
+      :dialog-id="captchaDialog.id"
+      :type="captchaDialog.type"
+      :properties="captchaDialog.properties"
+      @close="captchaDialog = null"
+    />
+    <DialogPromptModal
+      v-if="genericDialog"
+      :dialog-id="genericDialog.id"
+      :type="genericDialog.type"
+      :properties="genericDialog.properties"
+      @close="genericDialog = null"
     />
     <ToastNotification />
     <div

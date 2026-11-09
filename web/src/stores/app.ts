@@ -6,6 +6,8 @@ import { applyTheme, resolveTheme, toggleTheme, type Theme } from '@/lib/theme'
 
 export const useAppStore = defineStore('app', () => {
   const connected = ref(false)
+  const lastJdError = ref<string | null>(null)
+  const lastOkAt = ref<number | null>(null)
   const theme = ref<Theme>(resolveTheme())
   const pollInterval = ref(Number(localStorage.getItem('jdweb.poll') ?? 2000))
   const showAddLinks = ref(false)
@@ -27,16 +29,28 @@ export const useAppStore = defineStore('app', () => {
     moverEnabled: boolean
     moverIntervalMs?: number
     jdApiUrl?: string
+    oidcEnabled?: boolean
   } | null>(null)
 
   applyTheme(theme.value)
 
+  function markJdOk() {
+    connected.value = true
+    lastJdError.value = null
+    lastOkAt.value = Date.now()
+  }
+
+  function markJdError(message?: string) {
+    connected.value = false
+    lastJdError.value = message ?? 'unreachable'
+  }
+
   async function checkConnection() {
     try {
       await getJdVersion()
-      connected.value = true
-    } catch {
-      connected.value = false
+      markJdOk()
+    } catch (err) {
+      markJdError(err instanceof Error ? err.message : 'unreachable')
     }
   }
 
@@ -96,6 +110,8 @@ export const useAppStore = defineStore('app', () => {
 
   return {
     connected,
+    lastJdError,
+    lastOkAt,
     theme,
     pollInterval,
     showAddLinks,
@@ -106,6 +122,8 @@ export const useAppStore = defineStore('app', () => {
     toasts,
     publicConfig,
     checkConnection,
+    markJdOk,
+    markJdError,
     setTheme,
     flipTheme,
     setPollInterval,

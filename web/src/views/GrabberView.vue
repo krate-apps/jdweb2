@@ -14,12 +14,22 @@ const app = useAppStore()
 const downloads = useDownloadsStore()
 
 const menu = ref<{ visible: boolean; x: number; y: number; uuid: number } | null>(null)
+const search = ref('')
 
 const menuItems = computed<ContextMenuItem[]>(() => [
   { id: 'confirm', label: t('context.confirm') },
   { id: 'openurl', label: t('context.openUrl') },
   { id: 'remove', label: t('common.remove'), danger: true },
 ])
+
+const visibleLinks = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return grabber.links
+  return grabber.links.filter((link) => {
+    const hay = `${link.name ?? ''} ${link.host ?? ''} ${link.url ?? ''} ${link.availability ?? ''}`.toLowerCase()
+    return hay.includes(q)
+  })
+})
 
 onMounted(() => void grabber.refresh())
 
@@ -70,6 +80,15 @@ async function onMenuSelect(action: string) {
   <div class="p-4 md:p-5 space-y-4" @click="hideMenu">
     <div class="flex flex-wrap gap-2 items-center">
       <h1 class="text-2xl font-semibold tracking-tight mr-auto">{{ t('grabber.title') }}</h1>
+      <label class="inline-flex items-center gap-2 min-w-0 flex-1 max-w-xs order-last sm:order-none basis-full sm:basis-auto">
+        <span class="sr-only">{{ t('downloads.search') }}</span>
+        <input
+          v-model="search"
+          type="search"
+          class="jd-field py-1.5 w-full"
+          :placeholder="t('downloads.searchPlaceholder')"
+        />
+      </label>
       <button type="button" class="jd-btn jd-btn-primary" @click="confirmAll">
         {{ t('grabber.confirmAll') }}
       </button>
@@ -94,7 +113,7 @@ async function onMenuSelect(action: string) {
       </button>
     </div>
 
-    <div v-if="grabber.links.length" class="jd-panel rounded-[16px] overflow-hidden overflow-x-auto">
+    <div v-if="visibleLinks.length" class="jd-panel rounded-[16px] overflow-hidden overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="text-left text-xs text-muted border-b border-border bg-surface-2/40">
@@ -107,7 +126,7 @@ async function onMenuSelect(action: string) {
         </thead>
         <tbody>
           <tr
-            v-for="link in grabber.links"
+            v-for="link in visibleLinks"
             :key="link.uuid"
             class="border-b border-border/40 hover:bg-surface-2/35 transition-colors"
             @contextmenu.prevent="showMenu($event, link.uuid)"
@@ -127,7 +146,9 @@ async function onMenuSelect(action: string) {
         </tbody>
       </table>
     </div>
-    <p v-else class="jd-panel rounded-[16px] text-sm text-muted text-center py-12">{{ t('grabber.empty') }}</p>
+    <p v-else class="jd-panel rounded-[16px] text-sm text-muted text-center py-12">
+      {{ grabber.links.length ? t('downloads.searchEmpty') : t('grabber.empty') }}
+    </p>
 
     <ContextMenu
       v-if="menu?.visible"

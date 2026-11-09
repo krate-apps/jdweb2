@@ -20,8 +20,15 @@ const moveTarget = ref<{ uuid: number; saveTo?: string } | null>(null)
 const passwordTarget = ref<number | null>(null)
 const filter = ref<Filter>('all')
 const sortKey = ref<SortKey>('name')
+const search = ref('')
 
 function packageMatches(pkg: PackageInfo): boolean {
+  const q = search.value.trim().toLowerCase()
+  if (q) {
+    const hosts = (pkg.hosts ?? []).join(' ').toLowerCase()
+    const hay = `${pkg.name ?? ''} ${hosts} ${pkg.status ?? ''} ${pkg.comment ?? ''}`.toLowerCase()
+    if (!hay.includes(q)) return false
+  }
   if (filter.value === 'all') return true
   if (filter.value === 'finished') return Boolean(pkg.finished)
   if (filter.value === 'running') {
@@ -98,12 +105,31 @@ function progress(loaded?: number, total?: number) {
   return Math.min(100, Math.round(((loaded ?? 0) / total) * 100))
 }
 
-function showMenu(event: MouseEvent, type: 'package' | 'link', uuid: number) {
-  menu.value = { visible: true, x: event.clientX, y: event.clientY, type, uuid }
+function showMenu(event: MouseEvent | TouchEvent, type: 'package' | 'link', uuid: number) {
+  const point =
+    'touches' in event && event.touches[0]
+      ? { x: event.touches[0].clientX, y: event.touches[0].clientY }
+      : { x: (event as MouseEvent).clientX, y: (event as MouseEvent).clientY }
+  menu.value = { visible: true, x: point.x, y: point.y, type, uuid }
 }
 
 function hideMenu() {
   menu.value = null
+}
+
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+
+function onLongPressStart(event: TouchEvent, type: 'package' | 'link', uuid: number) {
+  if (longPressTimer) clearTimeout(longPressTimer)
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null
+    showMenu(event, type, uuid)
+  }, 480)
+}
+
+function onLongPressEnd() {
+  if (longPressTimer) clearTimeout(longPressTimer)
+  longPressTimer = null
 }
 
 function linkIdsForPackage(pkgUuid: number) {
@@ -164,6 +190,15 @@ async function onMenuSelect(action: string) {
 <template>
   <div class="p-3 sm:p-4 space-y-3 overflow-x-auto" @click="hideMenu">
     <div class="jd-panel rounded-[16px] px-3 py-2 flex flex-nowrap items-center gap-3 text-sm overflow-x-auto">
+      <label class="inline-flex items-center gap-2 shrink-0 min-w-0 flex-1 max-w-xs">
+        <span class="text-xs font-medium text-muted shrink-0">{{ t('downloads.search') }}</span>
+        <input
+          v-model="search"
+          type="search"
+          class="jd-field py-1.5 w-full min-w-32"
+          :placeholder="t('downloads.searchPlaceholder')"
+        />
+      </label>
       <label class="inline-flex items-center gap-2 shrink-0">
         <span class="text-xs font-medium text-muted">{{ t('downloads.filter') }}</span>
         <select v-model="filter" class="jd-field min-w-28 py-1.5">
@@ -205,6 +240,10 @@ async function onMenuSelect(action: string) {
             <tr
               class="border-b border-border/50 hover:bg-surface-2/40 transition-colors"
               @contextmenu.prevent="showMenu($event, 'package', pkg.uuid)"
+              @touchstart.passive="onLongPressStart($event, 'package', pkg.uuid)"
+              @touchend="onLongPressEnd"
+              @touchmove="onLongPressEnd"
+              @touchcancel="onLongPressEnd"
             >
               <td class="py-2.5 pl-2">
                 <button
@@ -222,7 +261,28 @@ async function onMenuSelect(action: string) {
                 {{ (pkg.hosts ?? []).join(', ') || '—' }}
               </td>
               <td class="py-2.5 px-2">
-                <span class="jd-chip" :class="statusClass(pkg.status, pkg.finished)">{{ pkg.status || '—' }}</span>
+                <div class="flex flex-wrap gap-1 items-center">
+                  <span class="jd-chip" :class="statusClass(pkg.status, pkg.finished)">{{ pkg.status || '—' }}</span>
+                  <span
+                    v-if="pkg.extraction && pkg.extraction !== 'none'"
+                    class="jd-chip"
+                    :class="{
+                      'text-state-down': pkg.extraction === 'extracting',
+                      'text-state-seed': pkg.extraction === 'ok',
+                      'text-state-error': pkg.extraction === 'failed' || pkg.extraction === 'needPassword',
+                    }"
+                  >
+                    {{
+                      pkg.extraction === 'extracting'
+                        ? t('extraction.extracting')
+                        : pkg.extraction === 'ok'
+                          ? t('extraction.ok')
+                          : pkg.extraction === 'needPassword'
+                            ? t('extraction.needPassword')
+                            : t('extraction.failed')
+                    }}
+                  </span>
+                </div>
               </td>
               <td class="py-2.5 px-2 text-right tabular-nums hidden md:table-cell">{{ formatSpeed(pkg.speed) }}</td>
               <td class="py-2.5 px-2 text-right tabular-nums hidden lg:table-cell">{{ formatEta(pkg.eta) }}</td>
@@ -285,7 +345,9 @@ async function onMenuSelect(action: string) {
         </tbody>
       </table>
 
-      <p v-if="!visiblePackages.length" class="text-sm text-muted p-10 text-center">{{ t('common.empty') }}</p>
+      <p v-if="!visiblePackages.length" class="text-sm text-muted p-10 text-center">
+        {{ downloads.packages.length ? t('downloads.searchEmpty') : t('common.empty') }}
+      </p>
     </div>
 
     <div
