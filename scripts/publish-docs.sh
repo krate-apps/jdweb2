@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Publish ./wiki markdown pages to the GitHub Wiki remote.
+# Publish ./docs markdown pages to the GitHub Wiki remote.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-WIKI_SRC="${ROOT}/wiki"
+DOCS_SRC="${ROOT}/docs"
 TMP="$(mktemp -d)"
 trap 'rm -rf "${TMP}"' EXIT
 
 git clone --depth 1 "https://github.com/krate-apps/jdweb.wiki.git" "${TMP}/wiki" 2>/dev/null \
   || git clone "https://github.com/krate-apps/jdweb.wiki.git" "${TMP}/wiki"
 
-rsync -a --delete --exclude .git "${WIKI_SRC}/" "${TMP}/wiki/"
+rsync -a --delete --exclude .git "${DOCS_SRC}/" "${TMP}/wiki/"
 git -C "${TMP}/wiki" add -A
 if git -C "${TMP}/wiki" diff --cached --quiet; then
   echo "Wiki already up to date."
@@ -20,7 +20,7 @@ git -C "${TMP}/wiki" -c user.name="$(git -C "${ROOT}" config user.name)" \
   commit -m "$(cat <<'EOF'
 docs: update wiki pages
 
-Sync English documentation from the jdweb repository wiki/ folder.
+Sync English documentation from the jdweb repository docs/ folder.
 EOF
 )"
 git -C "${TMP}/wiki" push origin HEAD
