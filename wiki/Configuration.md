@@ -10,6 +10,7 @@ All settings are environment variables. A template is provided in `.env.example`
 | `JDWEB_SESSION_SECRET` | Secret used to sign session cookies |
 | `JDWEB_DB_PATH` | SQLite file for users and hoster accounts (default `./data/jdweb.sqlite`) |
 | `JDWEB_DATA_KEY` | 64 hex chars (32-byte AES key) for hoster password encryption; required in production |
+| `JDWEB_DATA_KEY_PREVIOUS` | Old key during rotation; remove after a successful re-encrypting restart |
 | `JDWEB_USER` | Optional seed username for the first admin when the DB has no users |
 | `JDWEB_PASSWORD` | Optional seed password for the first admin (argon2id-hashed on insert) |
 | `JD_API_URL` | JDownloader local HTTP API base URL (server-side only) |

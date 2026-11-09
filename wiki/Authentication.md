@@ -45,6 +45,8 @@ Premium hoster accounts are the source of truth in SQLite. Passwords are encrypt
 
 If `JDWEB_DATA_KEY` is unset, a development key is derived from `JDWEB_SESSION_SECRET` and a warning is printed. Set an explicit key in production.
 
+To rotate the key: set `JDWEB_DATA_KEY` to the new value and `JDWEB_DATA_KEY_PREVIOUS` to the old one, restart once (jdweb re-encrypts all hoster secrets), then remove `JDWEB_DATA_KEY_PREVIOUS`. A failed rotation aborts startup.
+
 UI and API live under Accounts / `/api/hosters` (create, enable/disable, password update, delete, refresh, resync).
 
 ## Logout

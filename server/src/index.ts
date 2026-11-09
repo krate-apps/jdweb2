@@ -41,6 +41,7 @@ import {
   updateHosterPassword,
 } from './hosters.js'
 import { isLibraryRoot, listLibraryFolders } from './library.js'
+import { rotateHosterSecrets } from './crypto.js'
 
 type Vars = { username: string; sessionId: string; userId: number }
 
@@ -425,6 +426,10 @@ async function hasWebDist(): Promise<boolean> {
 async function main() {
   await ensureDirs()
   initDb()
+  const rotated = rotateHosterSecrets()
+  if (rotated > 0) {
+    console.log(`Re-encrypted ${rotated} hoster secret(s) with JDWEB_DATA_KEY; remove JDWEB_DATA_KEY_PREVIOUS after verifying`)
+  }
   await seedAdminFromEnv()
   startMover()
 
