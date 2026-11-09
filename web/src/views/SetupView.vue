@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -9,30 +9,53 @@ import { setupAdmin } from '@/api/setup'
 import { ApiError } from '@/api/http'
 import { markSetupDone } from '@/router'
 import BrandMark from '@/components/ui/BrandMark.vue'
+import * as settingsApi from '@/api/settings'
 
 const { t, locale } = useI18n()
 const auth = useAuthStore()
 const app = useAppStore()
 const router = useRouter()
 
+const step = ref<1 | 2 | 3>(1)
 const username = ref('')
 const password = ref('')
+const jdApiUrl = ref('http://127.0.0.1:3128')
+const stagingDir = ref('')
+const moviesDir = ref('')
+const showsDir = ref('')
+const otherDir = ref('')
 const error = ref<string | null>(null)
+const info = ref<string | null>(null)
 const busy = ref(false)
 
-async function submit() {
+async function loadDefaults() {
+  try {
+    const s = await settingsApi.getSettings()
+    jdApiUrl.value = s.jdApiUrl
+    stagingDir.value = s.stagingDir
+    moviesDir.value = s.moviesDir
+    showsDir.value = s.showsDir
+    otherDir.value = s.otherDir
+  } catch {
+    /* before login settings may 401 — probe still works on localhost during setup */
+  }
+}
+
+async function submitAdmin() {
   error.value = null
   busy.value = true
   try {
     const me = await setupAdmin(username.value, password.value)
     auth.username = me.username
     markSetupDone()
-    await router.replace({ name: 'downloads' })
+    await loadDefaults()
+    step.value = 2
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.message === 'setup_localhost_only') error.value = t('setup.localhostOnly')
       else if (err.message === 'setup_already_done') error.value = t('setup.alreadyDone')
       else if (err.message === 'password_too_short') error.value = t('setup.passwordTooShort')
+      else if (err.message === 'rate_limited') error.value = t('setup.rateLimited')
       else error.value = t('common.error')
     } else {
       error.value = t('common.error')
@@ -41,52 +64,163 @@ async function submit() {
     busy.value = false
   }
 }
+
+async function detectJd() {
+  error.value = null
+  info.value = null
+  busy.value = true
+  try {
+    const res = await settingsApi.probeJd()
+    if ('candidates' in res && res.candidates?.length) {
+      jdApiUrl.value = res.candidates[0].url
+      info.value = t('settings.jdDetected', { url: res.candidates[0].url })
+    } else {
+      error.value = t('settings.jdNotFound')
+    }
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : t('common.error')
+  } finally {
+    busy.value = false
+  }
+}
+
+async function saveJdAndContinue() {
+  error.value = null
+  busy.value = true
+  try {
+    await settingsApi.patchSettings({ jdApiUrl: jdApiUrl.value.trim() })
+    step.value = 3
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : t('common.error')
+  } finally {
+    busy.value = false
+  }
+}
+
+async function savePathsAndFinish() {
+  error.value = null
+  busy.value = true
+  try {
+    await settingsApi.patchSettings({
+      stagingDir: stagingDir.value.trim(),
+      moviesDir: moviesDir.value.trim(),
+      showsDir: showsDir.value.trim(),
+      otherDir: otherDir.value.trim(),
+    })
+    await router.replace({ name: 'downloads' })
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : t('common.error')
+  } finally {
+    busy.value = false
+  }
+}
+
+onMounted(() => {
+  if (auth.username) void loadDefaults()
+})
 </script>
 
 <template>
   <div class="min-h-screen flex items-center justify-center p-4 bg-background">
-    <form
-      class="w-full max-w-sm rounded-[14px] border border-border bg-surface p-6 space-y-4 shadow-lg"
-      @submit.prevent="submit"
-    >
+    <div class="w-full max-w-md rounded-[14px] border border-border bg-surface p-6 space-y-4 shadow-lg">
       <div class="space-y-2">
         <h1 class="text-xl">
           <BrandMark :size="28" />
         </h1>
         <p class="text-sm text-muted">{{ t('setup.title') }}</p>
-        <p class="text-xs text-muted">{{ t('setup.hint') }}</p>
+        <p class="text-xs text-muted">{{ t('setup.step', { n: step, total: 3 }) }}</p>
       </div>
 
-      <div>
-        <label class="block text-xs font-medium text-muted mb-1">{{ t('login.username') }}</label>
-        <input
-          v-model="username"
-          autocomplete="username"
-          class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
-          required
-        />
+      <form v-if="step === 1" class="space-y-4" @submit.prevent="submitAdmin">
+        <p class="text-xs text-muted">{{ t('setup.hint') }}</p>
+        <div>
+          <label class="block text-xs font-medium text-muted mb-1">{{ t('login.username') }}</label>
+          <input
+            v-model="username"
+            autocomplete="username"
+            class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-muted mb-1">{{ t('login.password') }}</label>
+          <input
+            v-model="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          class="w-full rounded-[10px] bg-primary text-primary-fg py-2 text-sm font-medium disabled:opacity-50"
+          :disabled="busy"
+        >
+          {{ t('setup.submit') }}
+        </button>
+      </form>
+
+      <div v-else-if="step === 2" class="space-y-4">
+        <p class="text-xs text-muted">{{ t('setup.jdHint') }}</p>
+        <label class="block space-y-1 text-sm">
+          <span class="text-xs text-muted">{{ t('settings.jdApiUrl') }}</span>
+          <input
+            v-model="jdApiUrl"
+            class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm font-mono"
+          />
+        </label>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="flex-1 px-3 py-2 rounded-[10px] border border-border text-sm disabled:opacity-50"
+            :disabled="busy"
+            @click="detectJd"
+          >
+            {{ t('settings.detectJd') }}
+          </button>
+          <button
+            type="button"
+            class="flex-1 px-3 py-2 rounded-[10px] bg-primary text-primary-fg text-sm disabled:opacity-50"
+            :disabled="busy"
+            @click="saveJdAndContinue"
+          >
+            {{ t('setup.continue') }}
+          </button>
+        </div>
       </div>
-      <div>
-        <label class="block text-xs font-medium text-muted mb-1">{{ t('login.password') }}</label>
-        <input
-          v-model="password"
-          type="password"
-          autocomplete="new-password"
-          minlength="8"
-          class="w-full bg-input border border-border rounded-[10px] px-3 py-2 text-sm"
-          required
-        />
+
+      <div v-else class="space-y-3">
+        <p class="text-xs text-muted">{{ t('setup.pathsHint') }}</p>
+        <label class="block space-y-1 text-sm">
+          <span class="text-xs text-muted">{{ t('settings.staging') }}</span>
+          <input v-model="stagingDir" class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono" />
+        </label>
+        <label class="block space-y-1 text-sm">
+          <span class="text-xs text-muted">{{ t('settings.movies') }}</span>
+          <input v-model="moviesDir" class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono" />
+        </label>
+        <label class="block space-y-1 text-sm">
+          <span class="text-xs text-muted">{{ t('settings.shows') }}</span>
+          <input v-model="showsDir" class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono" />
+        </label>
+        <label class="block space-y-1 text-sm">
+          <span class="text-xs text-muted">{{ t('settings.other') }}</span>
+          <input v-model="otherDir" class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono" />
+        </label>
+        <button
+          type="button"
+          class="w-full rounded-[10px] bg-primary text-primary-fg py-2 text-sm font-medium disabled:opacity-50"
+          :disabled="busy"
+          @click="savePathsAndFinish"
+        >
+          {{ t('setup.finish') }}
+        </button>
       </div>
 
       <p v-if="error" class="text-sm text-danger-text">{{ error }}</p>
-
-      <button
-        type="submit"
-        class="w-full rounded-[10px] bg-primary text-primary-fg py-2 text-sm font-medium disabled:opacity-50"
-        :disabled="busy"
-      >
-        {{ t('setup.submit') }}
-      </button>
+      <p v-if="info" class="text-sm text-accent-text">{{ info }}</p>
 
       <div class="flex gap-2 text-xs pt-2 border-t border-border">
         <select
@@ -105,6 +239,6 @@ async function submit() {
           {{ app.theme === 'dark' ? t('theme.light') : t('theme.dark') }}
         </button>
       </div>
-    </form>
+    </div>
   </div>
 </template>

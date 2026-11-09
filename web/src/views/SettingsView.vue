@@ -12,6 +12,8 @@ import { setLocale } from '@/i18n'
 import { ApiError, apiJson } from '@/api/http'
 import * as webhooksApi from '@/api/webhooks'
 import type { Webhook, WebhookEvent } from '@/api/webhooks'
+import * as settingsApi from '@/api/settings'
+import type { AppSettings } from '@/api/settings'
 
 const { t, locale } = useI18n()
 const app = useAppStore()
@@ -33,6 +35,18 @@ const myPasswordMsg = ref<string | null>(null)
 const sessions = ref<AppSession[]>([])
 const sessionError = ref<string | null>(null)
 const moverBusy = ref(false)
+const appSettings = ref<AppSettings | null>(null)
+const settingsForm = ref({
+  jdApiUrl: '',
+  stagingDir: '',
+  moviesDir: '',
+  showsDir: '',
+  otherDir: '',
+  moverIntervalMs: 15000,
+})
+const settingsBusy = ref(false)
+const settingsMsg = ref<string | null>(null)
+const settingsError = ref<string | null>(null)
 const moveEvents = ref<
   {
     id: number
@@ -94,6 +108,52 @@ async function removeWebhook(hook: Webhook) {
     await loadWebhooks()
   } catch (err) {
     webhookError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function loadAppSettings() {
+  settingsError.value = null
+  try {
+    appSettings.value = await settingsApi.getSettings()
+    settingsForm.value = { ...appSettings.value }
+  } catch (err) {
+    settingsError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function saveAppSettings() {
+  settingsBusy.value = true
+  settingsMsg.value = null
+  settingsError.value = null
+  try {
+    appSettings.value = await settingsApi.patchSettings({ ...settingsForm.value })
+    settingsForm.value = { ...appSettings.value }
+    settingsMsg.value = t('settings.saved')
+    await app.loadPublicConfig()
+  } catch (err) {
+    settingsError.value = err instanceof ApiError ? err.message : t('common.error')
+  } finally {
+    settingsBusy.value = false
+  }
+}
+
+async function detectJd() {
+  settingsBusy.value = true
+  settingsError.value = null
+  try {
+    const res = await settingsApi.probeJd()
+    if ('candidates' in res && res.candidates?.length) {
+      settingsForm.value.jdApiUrl = res.candidates[0].url
+      settingsMsg.value = t('settings.jdDetected', { url: res.candidates[0].url })
+    } else if ('ok' in res && res.ok) {
+      settingsMsg.value = t('settings.jdOk')
+    } else {
+      settingsError.value = t('settings.jdNotFound')
+    }
+  } catch (err) {
+    settingsError.value = err instanceof ApiError ? err.message : t('common.error')
+  } finally {
+    settingsBusy.value = false
   }
 }
 
@@ -223,6 +283,7 @@ async function load() {
   void loadSessions()
   void loadMoveHistory()
   void loadWebhooks()
+  void loadAppSettings()
   try {
     maxDownloads.value = (await jd.getMaxSimultDownloads()) ?? 3
     maxChunks.value = (await jd.getMaxChunks()) ?? 1
@@ -507,25 +568,85 @@ async function removePassword(value: string) {
       </div>
     </section>
 
-    <section v-if="app.publicConfig" class="space-y-2">
-      <h2 class="text-sm font-semibold text-muted">{{ t('settings.paths') }}</h2>
-      <dl class="text-xs space-y-1 text-muted">
-        <div><dt class="inline font-medium text-foreground">{{ t('settings.staging') }}:</dt> {{ app.publicConfig.stagingDir }}</div>
-        <div><dt class="inline font-medium text-foreground">{{ t('settings.movies') }}:</dt> {{ app.publicConfig.moviesDir }}</div>
-        <div><dt class="inline font-medium text-foreground">{{ t('settings.shows') }}:</dt> {{ app.publicConfig.showsDir }}</div>
-        <div><dt class="inline font-medium text-foreground">{{ t('settings.other') }}:</dt> {{ app.publicConfig.otherDir }}</div>
-      </dl>
-      <p class="text-xs text-accent-text">
-        {{ app.publicConfig.moverEnabled ? t('settings.moverOn') : t('settings.moverOff') }}
-      </p>
-      <button
-        type="button"
-        class="px-3 py-1.5 rounded-[10px] border border-border text-sm disabled:opacity-50"
-        :disabled="moverBusy"
-        @click="runMover"
-      >
-        {{ t('settings.runMover') }}
-      </button>
+    <section class="space-y-3">
+      <h2 class="text-sm font-semibold text-muted">{{ t('settings.appSettings') }}</h2>
+      <p class="text-xs text-muted">{{ t('settings.appSettingsHint') }}</p>
+      <p v-if="settingsError" class="text-xs text-danger-text">{{ settingsError }}</p>
+      <p v-if="settingsMsg" class="text-xs text-accent-text">{{ settingsMsg }}</p>
+      <label class="block space-y-1 text-sm">
+        <span class="text-xs text-muted">{{ t('settings.jdApiUrl') }}</span>
+        <div class="flex gap-2">
+          <input
+            v-model="settingsForm.jdApiUrl"
+            class="flex-1 bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
+          />
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-[10px] border border-border text-sm disabled:opacity-50"
+            :disabled="settingsBusy"
+            @click="detectJd"
+          >
+            {{ t('settings.detectJd') }}
+          </button>
+        </div>
+      </label>
+      <label class="block space-y-1 text-sm">
+        <span class="text-xs text-muted">{{ t('settings.staging') }}</span>
+        <input
+          v-model="settingsForm.stagingDir"
+          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
+        />
+      </label>
+      <label class="block space-y-1 text-sm">
+        <span class="text-xs text-muted">{{ t('settings.movies') }}</span>
+        <input
+          v-model="settingsForm.moviesDir"
+          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
+        />
+      </label>
+      <label class="block space-y-1 text-sm">
+        <span class="text-xs text-muted">{{ t('settings.shows') }}</span>
+        <input
+          v-model="settingsForm.showsDir"
+          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
+        />
+      </label>
+      <label class="block space-y-1 text-sm">
+        <span class="text-xs text-muted">{{ t('settings.other') }}</span>
+        <input
+          v-model="settingsForm.otherDir"
+          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm font-mono"
+        />
+      </label>
+      <label class="flex items-center justify-between gap-3 text-sm">
+        <span>{{ t('settings.moverInterval') }}</span>
+        <input
+          v-model.number="settingsForm.moverIntervalMs"
+          type="number"
+          min="0"
+          step="1000"
+          class="w-28 bg-input border border-border rounded-[10px] px-2 py-1 text-sm"
+        />
+      </label>
+      <p class="text-xs text-muted">{{ t('settings.moverIntervalHint') }}</p>
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm disabled:opacity-50"
+          :disabled="settingsBusy"
+          @click="saveAppSettings"
+        >
+          {{ t('settings.saveAppSettings') }}
+        </button>
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-[10px] border border-border text-sm disabled:opacity-50"
+          :disabled="moverBusy"
+          @click="runMover"
+        >
+          {{ t('settings.runMover') }}
+        </button>
+      </div>
     </section>
 
     <section class="space-y-2">

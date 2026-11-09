@@ -22,6 +22,8 @@ export const useAppStore = defineStore('app', () => {
     showsDir: string
     otherDir: string
     moverEnabled: boolean
+    moverIntervalMs?: number
+    jdApiUrl?: string
   } | null>(null)
 
   applyTheme(theme.value)
