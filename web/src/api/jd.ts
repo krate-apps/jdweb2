@@ -156,6 +156,34 @@ export function addLinks(payload: {
   })
 }
 
+/** Progress of a link crawler job from `/linkgrabberv2/queryLinkCrawlerJobs`. */
+export interface CrawlerJob {
+  crawling: boolean
+  checking: boolean
+  crawled: number
+  unhandled: number
+  filtered: number
+  broken: number
+}
+
+export async function queryCrawlerJob(jobId: number): Promise<CrawlerJob | null> {
+  const jobs = await jdCall<Partial<CrawlerJob>[]>('/linkgrabberv2/queryLinkCrawlerJobs', {
+    collectorInfo: true,
+    jobIds: [jobId],
+  })
+  const job = jobs?.[0]
+  if (!job) return null
+  return {
+    crawling: false,
+    checking: false,
+    crawled: 0,
+    unhandled: 0,
+    filtered: 0,
+    broken: 0,
+    ...job,
+  }
+}
+
 /** Read a .dlc (or similar) container as the data URL JD expects. */
 export function containerDataUrl(file: File): Promise<string> {
   const extension = file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase()
