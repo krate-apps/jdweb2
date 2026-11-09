@@ -166,6 +166,9 @@ export default {
     title: 'Archive password',
     hint: 'The password is added to JDownloader’s password list.',
     submit: 'Unlock',
+    retry: 'Retry extraction',
+    retryHint: 'Sets the archive password on this package and starts extraction again.',
+    retrySubmit: 'Extract',
   },
   move: {
     title: 'Change destination',

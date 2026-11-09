@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDownloadsStore } from '@/stores/downloads'
 import { formatEta, formatSize, formatSpeed } from '@/lib/format'
-import { getPasswordList, setPasswordList } from '@/api/jd'
 import MoveModal from '@/components/modals/MoveModal.vue'
+import PasswordModal from '@/components/modals/PasswordModal.vue'
 import ContextMenu, { type ContextMenuItem } from '@/components/ui/ContextMenu.vue'
 
 const { t } = useI18n()
@@ -12,9 +12,6 @@ const downloads = useDownloadsStore()
 const expanded = ref<Set<number>>(new Set())
 const moveTarget = ref<{ uuid: number; saveTo?: string } | null>(null)
 const passwordTarget = ref<number | null>(null)
-const passwordValue = ref('')
-const passwordBusy = ref(false)
-const passwordError = ref<string | null>(null)
 
 const menu = ref<{
   visible: boolean
@@ -32,7 +29,7 @@ const menuItems = computed<ContextMenuItem[]>(() => {
       { id: 'resume', label: t('downloads.resumeAll') },
       { id: 'pause', label: t('downloads.pauseAll') },
       { id: 'move', label: t('downloads.move') },
-      { id: 'password', label: t('password.title') },
+      { id: 'password', label: t('password.retry') },
       { id: 'remove', label: t('common.remove'), danger: true },
     ]
   }
@@ -91,8 +88,6 @@ async function onMenuSelect(action: string) {
     }
     if (action === 'password') {
       passwordTarget.value = uuid
-      passwordValue.value = ''
-      passwordError.value = null
       return
     }
     if (action === 'force') await downloads.forceLinks(ids)
@@ -108,21 +103,6 @@ async function onMenuSelect(action: string) {
   else if (action === 'remove') await downloads.removeLinkIds([uuid])
 }
 
-async function submitPackagePassword() {
-  const value = passwordValue.value.trim()
-  if (!value || passwordTarget.value == null) return
-  passwordBusy.value = true
-  passwordError.value = null
-  try {
-    const list = (await getPasswordList()) ?? []
-    if (!list.includes(value)) await setPasswordList([...list, value])
-    passwordTarget.value = null
-  } catch (err) {
-    passwordError.value = err instanceof Error ? err.message : t('common.error')
-  } finally {
-    passwordBusy.value = false
-  }
-}
 </script>
 
 <template>
@@ -245,30 +225,10 @@ async function submitPackagePassword() {
       @close="moveTarget = null"
     />
 
-    <div
+    <PasswordModal
       v-if="passwordTarget != null"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      @click.self="passwordTarget = null"
-    >
-      <form class="w-full max-w-sm rounded-[14px] bg-surface border border-border p-4 space-y-3" @submit.prevent="submitPackagePassword">
-        <h2 class="font-semibold">{{ t('password.title') }}</h2>
-        <p class="text-xs text-muted">{{ t('password.hint') }}</p>
-        <input
-          v-model="passwordValue"
-          type="password"
-          class="w-full bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
-          autofocus
-        />
-        <p v-if="passwordError" class="text-xs text-danger-text">{{ passwordError }}</p>
-        <div class="flex justify-end gap-2">
-          <button type="button" class="px-3 py-1.5 rounded-[10px] border border-border" @click="passwordTarget = null">
-            {{ t('common.cancel') }}
-          </button>
-          <button type="submit" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg" :disabled="passwordBusy">
-            {{ t('password.submit') }}
-          </button>
-        </div>
-      </form>
-    </div>
+      :package-uuid="passwordTarget"
+      @close="passwordTarget = null"
+    />
   </div>
 </template>

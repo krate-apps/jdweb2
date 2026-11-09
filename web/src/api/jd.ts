@@ -264,6 +264,15 @@ export function setPasswordList(passwords: string[]) {
   return jdCall<boolean>('/config/set', EXTRACTION, null, 'PasswordList', passwords)
 }
 
+/** Set archive passwords on a package and start extraction again. */
+export async function retryExtraction(packageUuid: number, password: string): Promise<void> {
+  const archives = (await jdCall<{ archiveId: string }[]>('/extraction/getArchiveInfo', [], [packageUuid])) ?? []
+  for (const { archiveId } of archives) {
+    await jdCall('/extraction/setArchiveSettings', archiveId, { archiveId, passwords: [password] })
+  }
+  await jdCall('/extraction/startExtractionNow', [], [packageUuid])
+}
+
 export function listDialogs() {
   return jdCall<number[] | null>('/dialogs/list')
 }

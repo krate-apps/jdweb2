@@ -166,6 +166,9 @@ export default {
     title: 'Mot de passe d’archive',
     hint: 'Le mot de passe est ajouté à la liste de JDownloader.',
     submit: 'Déverrouiller',
+    retry: 'Réessayer l’extraction',
+    retryHint: 'Définit le mot de passe d’archive du paquet et relance l’extraction.',
+    retrySubmit: 'Extraire',
   },
   move: {
     title: 'Changer la destination',
