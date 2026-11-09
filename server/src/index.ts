@@ -1,11 +1,12 @@
 import { serve } from '@hono/node-server'
 import { getConnInfo } from '@hono/node-server/conninfo'
-import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
+import type { Context } from 'hono'
+import { getMimeType } from 'hono/utils/mime'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { access, mkdir } from 'node:fs/promises'
+import { access, mkdir, readFile } from 'node:fs/promises'
 import { constants } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import { config } from './config.js'
 import {
   clearSession,
@@ -553,6 +554,35 @@ async function hasWebDist(): Promise<boolean> {
   }
 }
 
+const STATIC_ASSET_EXT =
+  /\.(js|mjs|css|map|ico|png|jpe?g|gif|svg|webp|woff2?|ttf|eot|webmanifest)$/i
+
+/** True when the built index.html already embeds JDWEB_BASE_PATH in asset URLs. */
+function htmlHasBasePath(html: string, basePath: string): boolean {
+  return html.includes(`${basePath}/assets/`)
+}
+
+/**
+ * Prefix root-absolute asset URLs when the UI was built without JDWEB_BASE_PATH.
+ * Note: the JS bundle still needs a rebuild for import.meta.env.BASE_URL / chunk URLs.
+ */
+function rewriteSpaHtml(html: string, basePath: string): string {
+  if (!basePath || htmlHasBasePath(html, basePath)) return html
+  return html.replaceAll('src="/', `src="${basePath}/`).replaceAll('href="/', `href="${basePath}/`)
+}
+
+async function loadSpaHtml(): Promise<string> {
+  return rewriteSpaHtml(await readFile(join(config.webDist, 'index.html'), 'utf8'), base)
+}
+
+/** Resolve a file under web/dist (absolute root, cwd-independent). */
+function resolveWebAsset(relPath: string): string | null {
+  const root = resolve(config.webDist)
+  const target = resolve(root, relPath)
+  if (target !== root && !target.startsWith(root + sep)) return null
+  return target
+}
+
 async function main() {
   await ensureDirs()
   initDb()
@@ -571,37 +601,58 @@ async function main() {
   const uiBuilt = await hasWebDist()
 
   if (uiBuilt) {
-    // Absolute root: pnpm --filter runs with cwd=server/, so "web/dist" would miss.
-    app.use(
-      `${base || ''}/*`,
-      serveStatic({
-        root: staticRoot,
-        rewriteRequestPath: (path) => {
-          const stripped = base && path.startsWith(base) ? path.slice(base.length) || '/' : path
-          return stripped.replace(/^\/+/, '') || 'index.html'
-        },
-      }),
-    )
+    const rawHtml = await readFile(join(staticRoot, 'index.html'), 'utf8')
+    if (base && !htmlHasBasePath(rawHtml, base)) {
+      log('error', 'web dist built without JDWEB_BASE_PATH; rebuild required', {
+        JDWEB_BASE_PATH: base,
+        webDist: staticRoot,
+        hint: 'From repo root: pnpm build && pnpm start',
+      })
+    } else {
+      log('info', 'serving UI', { webDist: staticRoot, base: base || '/' })
+    }
 
-    app.get(mount('/'), async (c) => {
-      const { readFile } = await import('node:fs/promises')
-      let html = await readFile(join(staticRoot, 'index.html'), 'utf8')
-      if (base) {
-        html = html.replaceAll('("/', `("${base}/`).replaceAll("('/", `('${base}/`)
+    const spaOrAsset = async (c: Context<{ Variables: Vars }>) => {
+      const path = c.req.path
+      const stripped = base && path.startsWith(base) ? path.slice(base.length) || '/' : path
+      const rel = stripped.replace(/^\/+/, '')
+
+      // Never SPA-fallback assets — wrong MIME (text/html) breaks modules/CSS.
+      if (rel && rel !== 'index.html' && STATIC_ASSET_EXT.test(rel)) {
+        const file = resolveWebAsset(rel)
+        if (!file) {
+          log('warn', 'asset path rejected', { rel })
+          return c.text('Not Found', 404)
+        }
+        try {
+          const body = await readFile(file)
+          const mime = getMimeType(file) || 'application/octet-stream'
+          return c.body(body, 200, {
+            'Content-Type': mime,
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          })
+        } catch {
+          log('warn', 'asset missing', { rel, file, webDist: staticRoot })
+          return c.text('Not Found', 404)
+        }
       }
-      return c.html(html)
-    })
 
-    app.get(`${base || ''}/*`, async (c) => {
-      const { readFile } = await import('node:fs/promises')
-      return c.html(await readFile(join(staticRoot, 'index.html'), 'utf8'))
-    })
+      return c.html(await loadSpaHtml())
+    }
+
+    app.get(mount('/'), (c) => spaOrAsset(c))
+    // Exact prefix with trailing slash (Caddy redirects here)
+    if (base) {
+      app.get(`${base}/`, (c) => spaOrAsset(c))
+    }
+    app.get(`${base || ''}/*`, (c) => spaOrAsset(c))
   }
 
-  log('info', 'jdweb listening', {
+  log('info', 'jdweb starting', {
     url: `http://${config.host}:${config.port}${base || '/'}`,
-    users: countUsers(),
+    webDist: staticRoot,
     uiBuilt,
+    users: countUsers(),
   })
   if (countUsers() === 0) {
     log('info', 'no users yet; seed via JDWEB_USER/JDWEB_PASSWORD or POST /api/setup/admin from localhost')
@@ -609,7 +660,18 @@ async function main() {
   if (!uiBuilt) {
     log('info', 'web dist missing; use Vite at http://127.0.0.1:5173 during development')
   }
-  serve({ fetch: app.fetch, hostname: config.host, port: config.port })
+
+  const server = serve({ fetch: app.fetch, hostname: config.host, port: config.port })
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    log('error', 'listen failed', {
+      error: err.message,
+      code: err.code,
+      host: config.host,
+      port: config.port,
+      hint: err.code === 'EADDRINUSE' ? `Stop the other process on port ${config.port}, then restart` : undefined,
+    })
+    process.exit(1)
+  })
 }
 
 main().catch((err) => {

@@ -1,6 +1,10 @@
 services:
   jdweb:
-    build: .
+    build:
+      context: .
+      args:
+        # Must match JDWEB_BASE_PATH in .env so Vite embeds /prefix/assets/...
+        JDWEB_BASE_PATH: ${JDWEB_BASE_PATH:-}
     ports:
       - "${JDWEB_PORT:-8787}:8787"
     env_file:
