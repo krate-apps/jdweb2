@@ -7,9 +7,11 @@ All settings are environment variables. A template is provided in `.env.example`
 | `JDWEB_HOST` | Address the server binds to (`127.0.0.1` local-only; `0.0.0.0` for remote access) |
 | `JDWEB_PORT` | Port (default `8787`) |
 | `JDWEB_BASE_PATH` | Public URL prefix without trailing slash (`/jdweb`, `/alice/jdweb`, or empty) |
-| `JDWEB_USER` | Login username |
-| `JDWEB_PASSWORD` | Login password |
 | `JDWEB_SESSION_SECRET` | Secret used to sign session cookies |
+| `JDWEB_DB_PATH` | SQLite file for users and hoster accounts (default `./data/jdweb.sqlite`) |
+| `JDWEB_DATA_KEY` | 64 hex chars (32-byte AES key) for hoster password encryption; required in production |
+| `JDWEB_USER` | Optional seed username for the first admin when the DB has no users |
+| `JDWEB_PASSWORD` | Optional seed password for the first admin (argon2id-hashed on insert) |
 | `JD_API_URL` | JDownloader local HTTP API base URL (server-side only) |
 | `JDWEB_STAGING_DIR` | Root folder where JDownloader downloads and extracts |
 | `JDWEB_MOVIES_DIR` | Library folder for movies |
