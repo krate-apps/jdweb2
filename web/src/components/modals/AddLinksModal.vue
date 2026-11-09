@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DestinationFields, { type Kind } from '@/components/ui/DestinationFields.vue'
 import { apiJson } from '@/api/http'
 import { addLinks, CONTAINER_EXTENSIONS, containerDataUrl, getPasswordList, setPasswordList } from '@/api/jd'
 import { useGrabberStore } from '@/stores/grabber'
 import { useDownloadsStore } from '@/stores/downloads'
+import { useAppStore } from '@/stores/app'
 
 type Source = 'links' | 'dlc'
 
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
+const app = useAppStore()
 const grabber = useGrabberStore()
 const downloads = useDownloadsStore()
 
@@ -53,6 +55,16 @@ async function addFiles(files: File[]) {
     }
   }
 }
+
+watch(
+  () => app.droppedFiles,
+  (files) => {
+    if (!files.length || busy.value) return
+    app.droppedFiles = []
+    void addFiles(files)
+  },
+  { immediate: true },
+)
 
 function onFilesPicked(event: Event) {
   const input = event.target as HTMLInputElement

@@ -7,7 +7,7 @@ import { useAppStore } from '@/stores/app'
 import { useDownloadsStore } from '@/stores/downloads'
 import { formatSize, formatSpeed } from '@/lib/format'
 import { setLocale } from '@/i18n'
-import { getDialog, listDialogs } from '@/api/jd'
+import { CONTAINER_EXTENSIONS, getDialog, listDialogs } from '@/api/jd'
 import AddLinksModal from '@/components/modals/AddLinksModal.vue'
 import PasswordModal from '@/components/modals/PasswordModal.vue'
 import ToastNotification from '@/components/ui/ToastNotification.vue'
@@ -20,6 +20,8 @@ const router = useRouter()
 const passwordDialogId = ref<number | null>(null)
 const showSpeedPopover = ref(false)
 const speedInputKbps = ref(0)
+const draggingDlc = ref(false)
+let dragDepth = 0
 let dialogTimer: ReturnType<typeof setInterval> | null = null
 
 function openSpeedPopover() {
@@ -51,6 +53,39 @@ function onGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
+function hasFiles(event: DragEvent): boolean {
+  return event.dataTransfer?.types.includes('Files') ?? false
+}
+
+function onDragEnter(event: DragEvent) {
+  if (!hasFiles(event)) return
+  event.preventDefault()
+  dragDepth++
+  draggingDlc.value = true
+}
+
+function onDragOver(event: DragEvent) {
+  if (hasFiles(event)) event.preventDefault()
+}
+
+function onDragLeave(event: DragEvent) {
+  if (!hasFiles(event)) return
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) draggingDlc.value = false
+}
+
+function onWindowDrop(event: DragEvent) {
+  if (!hasFiles(event)) return
+  event.preventDefault()
+  dragDepth = 0
+  draggingDlc.value = false
+  const files = Array.from(event.dataTransfer?.files ?? []).filter((f) =>
+    CONTAINER_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext)),
+  )
+  if (files.length) app.addContainerFiles(files)
+  else app.addToast(t('addLinks.dlcOnly'))
+}
+
 async function pollDialogs() {
   try {
     const ids = (await listDialogs()) ?? []
@@ -78,12 +113,20 @@ onMounted(async () => {
   void pollDialogs()
   dialogTimer = setInterval(() => void pollDialogs(), 4000)
   document.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('dragenter', onDragEnter)
+  window.addEventListener('dragover', onDragOver)
+  window.addEventListener('dragleave', onDragLeave)
+  window.addEventListener('drop', onWindowDrop)
 })
 
 onUnmounted(() => {
   downloads.stopPolling()
   if (dialogTimer) clearInterval(dialogTimer)
   document.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('dragenter', onDragEnter)
+  window.removeEventListener('dragover', onDragOver)
+  window.removeEventListener('dragleave', onDragLeave)
+  window.removeEventListener('drop', onWindowDrop)
 })
 
 async function onLogout() {
@@ -243,5 +286,13 @@ async function onLogout() {
       @close="passwordDialogId = null"
     />
     <ToastNotification />
+    <div
+      v-if="draggingDlc"
+      class="fixed inset-0 z-[60] flex items-center justify-center bg-accent/20 border-4 border-dashed border-accent pointer-events-none"
+    >
+      <div class="bg-surface border border-border rounded-[14px] shadow-lg px-6 py-4 text-sm font-medium text-accent-text">
+        {{ t('addLinks.dropOverlay') }}
+      </div>
+    </div>
   </div>
 </template>

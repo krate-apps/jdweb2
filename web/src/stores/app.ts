@@ -9,6 +9,8 @@ export const useAppStore = defineStore('app', () => {
   const theme = ref<Theme>(resolveTheme())
   const pollInterval = ref(Number(localStorage.getItem('jdweb.poll') ?? 2000))
   const showAddLinks = ref(false)
+  /** Container files dropped on the window, picked up by the Add links dialog. */
+  const droppedFiles = ref<File[]>([])
   /** Global download speed limit in bytes/s; 0 = unlimited. */
   const speedLimit = ref(0)
   const showCompletionToasts = ref(localStorage.getItem('jdweb.toasts') !== 'false')
@@ -66,6 +68,12 @@ export const useAppStore = defineStore('app', () => {
     speedLimit.value = value
   }
 
+  function addContainerFiles(files: File[]) {
+    if (!files.length) return
+    droppedFiles.value = [...droppedFiles.value, ...files]
+    showAddLinks.value = true
+  }
+
   function watchCompletionToasts() {
     localStorage.setItem('jdweb.toasts', String(showCompletionToasts.value))
   }
@@ -86,6 +94,7 @@ export const useAppStore = defineStore('app', () => {
     theme,
     pollInterval,
     showAddLinks,
+    droppedFiles,
     speedLimit,
     showCompletionToasts,
     toasts,
@@ -97,6 +106,7 @@ export const useAppStore = defineStore('app', () => {
     loadPublicConfig,
     fetchSpeedLimit,
     applySpeedLimit,
+    addContainerFiles,
     watchCompletionToasts,
     addToast,
     dismissToast,
