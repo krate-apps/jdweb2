@@ -28,3 +28,10 @@ export function updateUserPassword(id: number, password: string) {
 export function deleteUser(id: number) {
   return apiJson<{ ok: boolean }>(`api/users/${id}`, { method: 'DELETE' })
 }
+
+export function changeMyPassword(currentPassword: string, newPassword: string) {
+  return apiJson<{ ok: boolean }>('api/users/me/password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+}

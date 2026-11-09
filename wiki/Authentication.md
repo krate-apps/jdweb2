@@ -25,6 +25,18 @@ Protected routes include `/api/auth/me`, `/api/users`, `/api/hosters`, destinati
 
 Authenticated callers can list, create, update passwords, and delete users under `/api/users`. The last remaining user cannot be deleted.
 
+Signed-in users change their own password with `POST /api/users/me/password` `{ currentPassword, newPassword }` (Settings → My password).
+
+### Resetting a forgotten password
+
+Env seed only runs when the users table is empty. To reset an existing user without the current password:
+
+```bash
+pnpm --filter ./server exec tsx scripts/reset-password.ts <username> <newPassword>
+```
+
+Alternatively delete all users (or the last admin) and bootstrap again via setup.
+
 ## Hoster accounts
 
 Premium hoster accounts are the source of truth in SQLite. Passwords are encrypted with **AES-256-GCM** using `JDWEB_DATA_KEY` (64 hex characters = 32 bytes). They are decrypted only in memory when syncing to JDownloader’s `accountsV2` API.

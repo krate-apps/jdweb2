@@ -183,6 +183,10 @@ export default {
     addUser: 'Ajouter un utilisateur',
     userPassword: 'Mot de passe (min. 8 caractères)',
     removeUserConfirm: 'Supprimer cet utilisateur ?',
+    myPassword: 'Mon mot de passe',
+    currentPassword: 'Mot de passe actuel',
+    changePassword: 'Changer le mot de passe',
+    passwordChanged: 'Mot de passe mis à jour.',
   },
   context: {
     pause: 'Pause',

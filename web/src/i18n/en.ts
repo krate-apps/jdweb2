@@ -183,6 +183,10 @@ export default {
     addUser: 'Add user',
     userPassword: 'Password (min. 8 characters)',
     removeUserConfirm: 'Remove this user?',
+    myPassword: 'My password',
+    currentPassword: 'Current password',
+    changePassword: 'Change password',
+    passwordChanged: 'Password updated.',
   },
   context: {
     pause: 'Pause',

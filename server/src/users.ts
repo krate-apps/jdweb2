@@ -88,6 +88,16 @@ export async function updateUserPassword(id: number, password: string): Promise<
   if (result.changes === 0) throw new Error('user_not_found')
 }
 
+export async function changeOwnPassword(
+  username: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = await verifyLogin(username, currentPassword)
+  if (!user) throw new Error('invalid_credentials')
+  await updateUserPassword(user.id, newPassword)
+}
+
 export function deleteUser(id: number): void {
   if (countUsers() <= 1) throw new Error('cannot_delete_last_user')
   const result = getDb().prepare('DELETE FROM users WHERE id = ?').run(id)

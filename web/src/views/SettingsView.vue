@@ -23,6 +23,9 @@ const users = ref<AppUser[]>([])
 const newUsername = ref('')
 const newUserPassword = ref('')
 const userError = ref<string | null>(null)
+const currentPassword = ref('')
+const myNewPassword = ref('')
+const myPasswordMsg = ref<string | null>(null)
 const error = ref<string | null>(null)
 
 function formatErr(err: unknown): string {
@@ -62,6 +65,18 @@ async function removeUser(user: AppUser) {
     await loadUsers()
   } catch (err) {
     userError.value = err instanceof ApiError ? err.message : t('common.error')
+  }
+}
+
+async function changeMyPassword() {
+  myPasswordMsg.value = null
+  try {
+    await usersApi.changeMyPassword(currentPassword.value, myNewPassword.value)
+    currentPassword.value = ''
+    myNewPassword.value = ''
+    myPasswordMsg.value = t('settings.passwordChanged')
+  } catch (err) {
+    myPasswordMsg.value = err instanceof ApiError ? err.message : t('common.error')
   }
 }
 
@@ -124,6 +139,31 @@ async function removePassword(value: string) {
   <div class="p-4 max-w-lg space-y-6">
     <h1 class="text-lg font-semibold">{{ t('settings.title') }}</h1>
     <p v-if="error" class="text-sm text-danger-text">{{ error }}</p>
+
+    <section class="space-y-2">
+      <h2 class="text-sm font-semibold text-muted">{{ t('settings.myPassword') }}</h2>
+      <form class="grid sm:grid-cols-3 gap-2" @submit.prevent="changeMyPassword">
+        <input
+          v-model="currentPassword"
+          type="password"
+          required
+          class="bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
+          :placeholder="t('settings.currentPassword')"
+        />
+        <input
+          v-model="myNewPassword"
+          type="password"
+          required
+          minlength="8"
+          class="bg-input border border-border rounded-[10px] px-2 py-1.5 text-sm"
+          :placeholder="t('settings.userPassword')"
+        />
+        <button type="submit" class="px-3 py-1.5 rounded-[10px] bg-primary text-primary-fg text-sm">
+          {{ t('settings.changePassword') }}
+        </button>
+      </form>
+      <p v-if="myPasswordMsg" class="text-xs text-muted">{{ myPasswordMsg }}</p>
+    </section>
 
     <section class="space-y-2">
       <h2 class="text-sm font-semibold text-muted">{{ t('settings.users') }}</h2>

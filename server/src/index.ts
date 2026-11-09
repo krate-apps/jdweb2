@@ -14,6 +14,7 @@ import { movePackageNow, startMover } from './mover.js'
 import { initDb } from './db.js'
 import {
   countUsers,
+  changeOwnPassword,
   createUser,
   deleteUser,
   listUsers,
@@ -133,6 +134,24 @@ app.get(mount('/api/auth/me'), (c) => {
 })
 
 app.get(mount('/api/users'), requireAuth, (c) => c.json({ users: listUsers() }))
+
+app.post(mount('/api/users/me/password'), requireAuth, async (c) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    currentPassword?: string
+    newPassword?: string
+  } | null
+  try {
+    await changeOwnPassword(
+      c.get('username'),
+      body?.currentPassword ?? '',
+      body?.newPassword ?? '',
+    )
+    return c.json({ ok: true })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'update_failed'
+    return c.json({ error: message }, errorStatus(message))
+  }
+})
 
 app.post(mount('/api/users'), requireAuth, async (c) => {
   const body = (await c.req.json().catch(() => null)) as { username?: string; password?: string } | null
