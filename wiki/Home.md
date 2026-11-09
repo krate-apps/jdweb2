@@ -20,7 +20,7 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 - Premium hoster accounts stored encrypted in SQLite and synced to JDownloader
 - Connection limits, download speed limit, and archive password list
 - Optional toast when a package finishes downloading
-- Right-click actions on download packages, links, and link-grabber rows
+- Right-click actions on download packages, links, and link-grabber rows (rename, comment, stop-after, move, retry extract, …)
 - Retry archive extraction with a password from a package’s context menu
 - Ctrl+L (Cmd+L on macOS) opens the add-links dialog outside text fields
 - Add links accepts pasted URLs or `.dlc` container files and shows crawler progress (found / filtered / broken)

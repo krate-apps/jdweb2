@@ -115,6 +115,20 @@ export function forceDownload(linkIds: number[]) {
   return jdCall('/downloadsV2/forceDownload', linkIds, [])
 }
 
+export function setPackageComment(packageUuid: number, comment: string) {
+  return jdCall('/downloadsV2/setComment', comment, [], [packageUuid])
+}
+
+/** Rename a download package (JD local API). */
+export function renamePackage(packageUuid: number, name: string) {
+  return jdCall('/downloadsV2/renamePackage', name, packageUuid)
+}
+
+/** Finish the current file(s) then stop the download engine. */
+export function stopAfterCurrentLinks() {
+  return jdCall<boolean>('/downloadcontroller/stopDownloadsAfterCurrentLinks')
+}
+
 function cleanup(action: 'DELETE_FINISHED' | 'DELETE_FAILED' | 'DELETE_OFFLINE') {
   return jdCall('/downloadsV2/cleanup', action, 'REMOVE_LINKS_ONLY', 'ALL', [], [])
 }

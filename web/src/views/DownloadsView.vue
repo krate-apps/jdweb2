@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDownloadsStore } from '@/stores/downloads'
 import type { PackageInfo } from '@/api/jd'
+import * as jd from '@/api/jd'
 import { formatEta, formatSize, formatSpeed } from '@/lib/format'
 import MoveModal from '@/components/modals/MoveModal.vue'
 import PasswordModal from '@/components/modals/PasswordModal.vue'
@@ -60,6 +61,9 @@ const menuItems = computed<ContextMenuItem[]>(() => {
       { id: 'force', label: t('downloads.force') },
       { id: 'resume', label: t('downloads.resumeAll') },
       { id: 'pause', label: t('downloads.pauseAll') },
+      { id: 'rename', label: t('downloads.rename') },
+      { id: 'comment', label: t('downloads.setComment') },
+      { id: 'stopAfter', label: t('downloads.stopAfter') },
       { id: 'move', label: t('downloads.move') },
       { id: 'password', label: t('password.retry') },
       { id: 'remove', label: t('common.remove'), danger: true },
@@ -120,6 +124,25 @@ async function onMenuSelect(action: string) {
     }
     if (action === 'password') {
       passwordTarget.value = uuid
+      return
+    }
+    if (action === 'rename') {
+      const next = window.prompt(t('downloads.renamePrompt'), pkg?.name ?? '')
+      if (next == null || !next.trim() || next.trim() === pkg?.name) return
+      await jd.renamePackage(uuid, next.trim())
+      await downloads.refresh()
+      return
+    }
+    if (action === 'comment') {
+      const next = window.prompt(t('downloads.commentPrompt'), pkg?.comment ?? '')
+      if (next == null) return
+      await jd.setPackageComment(uuid, next)
+      await downloads.refresh()
+      return
+    }
+    if (action === 'stopAfter') {
+      await jd.stopAfterCurrentLinks()
+      await downloads.refresh()
       return
     }
     if (action === 'force') await downloads.forceLinks(ids)
