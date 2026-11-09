@@ -1,4 +1,5 @@
-import { resolve } from 'node:path'
+import { homedir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { getDb } from './db.js'
 import { projectRoot } from './config.js'
 import { assertSafeJdApiUrl } from './security.js'
@@ -38,14 +39,27 @@ function envInt(name: string, fallback: number): number {
   return Number.isFinite(n) ? n : fallback
 }
 
-/** Defaults from env (legacy installs) or built-in paths under the project root. */
+/** Default media tree: ~/medias/jdownloader/… (same home layout as other downloaders). */
+export function defaultMediaRoot(): string {
+  return join(homedir(), 'medias', 'jdownloader')
+}
+
+function resolveSettingPath(raw: string, fallbackAbsolute: string): string {
+  const value = raw.trim()
+  if (!value) return fallbackAbsolute
+  if (value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value)) return resolve(value)
+  return resolve(projectRoot, value)
+}
+
+/** Defaults from env (legacy installs) or ~/medias/jdownloader like other downloaders. */
 export function defaultsFromEnv(): AppSettings {
+  const media = defaultMediaRoot()
   return {
     jdApiUrl: env('JD_API_URL', 'http://127.0.0.1:3128').replace(/\/+$/, ''),
-    stagingDir: resolve(projectRoot, env('JDWEB_STAGING_DIR', './data/staging')),
-    moviesDir: resolve(projectRoot, env('JDWEB_MOVIES_DIR', './data/library/movies')),
-    showsDir: resolve(projectRoot, env('JDWEB_SHOWS_DIR', './data/library/shows')),
-    otherDir: resolve(projectRoot, env('JDWEB_OTHER_DIR', './data/library/other')),
+    stagingDir: resolveSettingPath(env('JDWEB_STAGING_DIR'), join(media, 'staging')),
+    moviesDir: resolveSettingPath(env('JDWEB_MOVIES_DIR'), join(media, 'library', 'movies')),
+    showsDir: resolveSettingPath(env('JDWEB_SHOWS_DIR'), join(media, 'library', 'shows')),
+    otherDir: resolveSettingPath(env('JDWEB_OTHER_DIR'), join(media, 'library', 'other')),
     moverIntervalMs: envInt('JDWEB_MOVER_INTERVAL_MS', 15_000),
   }
 }

@@ -26,7 +26,7 @@ export default {
     finish: 'Finish and open jdweb',
     step: 'Step {n} of {total}',
     jdHint: 'Point jdweb at JDownloader’s local HTTP API (loopback or private IP only).',
-    pathsHint: 'Staging and library folders. Defaults under ./data work for a quick start.',
+    pathsHint: 'Staging and library folders. Defaults under ~/medias/jdownloader match other downloaders.',
     rateLimited: 'Too many attempts. Wait a minute and try again.',
     localhostOnly: 'Initial setup is only allowed from localhost.',
     alreadyDone: 'Setup is already complete. Sign in instead.',

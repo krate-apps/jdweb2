@@ -26,7 +26,7 @@ export default {
     finish: 'Terminer et ouvrir jdweb',
     step: 'Étape {n} sur {total}',
     jdHint: 'Indiquez l’API HTTP locale de JDownloader (loopback ou IP privée uniquement).',
-    pathsHint: 'Dossiers staging et bibliothèque. Les défauts sous ./data conviennent pour démarrer.',
+    pathsHint: 'Dossiers staging et bibliothèque. Les défauts sous ~/medias/jdownloader alignent les autres downloaders.',
     rateLimited: 'Trop de tentatives. Attendez une minute.',
     localhostOnly: 'La configuration initiale n’est autorisée que depuis localhost.',
     alreadyDone: 'La configuration est déjà terminée. Connectez-vous.',

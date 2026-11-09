@@ -10,7 +10,7 @@ pnpm build && pnpm start
 
 Requires Node.js 20+ and pnpm 9 (`corepack enable` is enough on recent Node).
 
-On first boot without secrets, jdweb writes **`data/secrets.env`** (mode `600`) with `JDWEB_SESSION_SECRET` and `JDWEB_DATA_KEY`. Open the UI on localhost — the **setup wizard** creates the admin, probes JDownloader, and sets staging/library paths (stored in SQLite).
+On first boot without secrets, jdweb writes **`data/secrets.env`** (mode `600`) with `JDWEB_SESSION_SECRET` and `JDWEB_DATA_KEY`. Open the UI on localhost — the **setup wizard** creates the admin, probes JDownloader, and sets staging/library paths (defaults under `~/medias/jdownloader/…`, stored in SQLite).
 
 Optional: `cp .env.example .env` only if you need bind address, base path, or DB path. See [Configuration](Configuration).
 

@@ -33,9 +33,19 @@ Stored in `app_settings` and edited under **Settings → JDownloader and library
 | Setting | Default seed |
 |---------|----------------|
 | `jdApiUrl` | `JD_API_URL` or `http://127.0.0.1:3128` |
-| `stagingDir` | `JDWEB_STAGING_DIR` or `./data/staging` |
-| `moviesDir` / `showsDir` / `otherDir` | matching env or `./data/library/…` |
+| `stagingDir` | `JDWEB_STAGING_DIR` or `~/medias/jdownloader/staging` |
+| `moviesDir` / `showsDir` / `otherDir` | matching env or `~/medias/jdownloader/library/…` |
 | `moverIntervalMs` | `JDWEB_MOVER_INTERVAL_MS` or `15000` (`0` = off) |
+
+Host layout matches other downloaders under `~/medias/<app>/`:
+
+```text
+~/medias/jdownloader/
+  staging/{movies,shows,downloads}
+  library/{movies,shows,other}
+```
+
+Docker Compose still seeds `/data/…` via env (volume `./data`).
 
 Env values for those keys are used **once** to seed SQLite (and as legacy override when seeding an empty table). Afterwards the database is the source of truth.
 

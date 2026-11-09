@@ -11,6 +11,7 @@ When adding links (or moving a package), choose a destination kind:
 | Other | `downloads/<Name>` | other library `/<Name>` |
 
 Paths are **app settings** (SQLite / Settings UI), seeded once from env if present.
+Default host seed: `~/medias/jdownloader/staging` and `~/medias/jdownloader/library/…`.
 
 JDownloader is told to save into the **staging** path. You can change a package’s destination later from the download list (context menu → move).
 

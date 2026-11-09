@@ -33,7 +33,15 @@ describe('app settings', () => {
     const s = getAppSettings()
     assert.equal(s.jdApiUrl, 'http://127.0.0.1:3128')
     assert.equal(s.moverIntervalMs, 15000)
+    assert.equal(s.stagingDir, process.env.JDWEB_STAGING_DIR)
     assert.ok(s.stagingDir.includes('staging'))
+  })
+
+  it('default media root is under ~/medias/jdownloader', async () => {
+    const { defaultMediaRoot } = await import('./settings.js')
+    const { homedir } = await import('node:os')
+    const { join } = await import('node:path')
+    assert.equal(defaultMediaRoot(), join(homedir(), 'medias', 'jdownloader'))
   })
 
   it('updates and persists JD URL and interval', () => {
