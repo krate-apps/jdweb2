@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { ChevronDown, ChevronRight, FolderInput } from '@lucide/vue'
 import { useDownloadsStore } from '@/stores/downloads'
 import type { PackageInfo } from '@/api/jd'
 import * as jd from '@/api/jd'
@@ -161,120 +162,136 @@ async function onMenuSelect(action: string) {
 </script>
 
 <template>
-  <div class="p-3 overflow-x-auto" @click="hideMenu">
-    <div class="flex flex-wrap gap-2 items-center mb-3 text-sm">
-      <label class="text-xs text-muted">{{ t('downloads.filter') }}</label>
-      <select v-model="filter" class="bg-input border border-border rounded-[10px] px-2 py-1 text-sm">
+  <div class="p-3 sm:p-4 space-y-3 overflow-x-auto" @click="hideMenu">
+    <div class="jd-panel rounded-[16px] px-3 py-2.5 flex flex-wrap gap-3 items-center text-sm">
+      <label class="text-xs font-medium text-muted">{{ t('downloads.filter') }}</label>
+      <select v-model="filter" class="jd-field w-auto py-1.5">
         <option value="all">{{ t('downloads.filterAll') }}</option>
         <option value="running">{{ t('downloads.filterRunning') }}</option>
         <option value="finished">{{ t('downloads.filterFinished') }}</option>
         <option value="error">{{ t('downloads.filterError') }}</option>
       </select>
-      <label class="text-xs text-muted ml-2">{{ t('downloads.sort') }}</label>
-      <select v-model="sortKey" class="bg-input border border-border rounded-[10px] px-2 py-1 text-sm">
+      <label class="text-xs font-medium text-muted">{{ t('downloads.sort') }}</label>
+      <select v-model="sortKey" class="jd-field w-auto py-1.5">
         <option value="name">{{ t('downloads.name') }}</option>
         <option value="size">{{ t('downloads.size') }}</option>
         <option value="eta">{{ t('downloads.eta') }}</option>
       </select>
+      <span class="jd-chip ml-auto text-muted">{{ visiblePackages.length }}</span>
     </div>
-    <table class="w-full text-sm border-collapse min-w-[720px]">
-      <thead>
-        <tr class="text-left text-xs text-muted border-b border-border">
-          <th class="w-8 py-1" />
-          <th class="py-1 pr-2">{{ t('downloads.name') }}</th>
-          <th class="py-1 px-1 text-right hidden md:table-cell">{{ t('downloads.size') }}</th>
-          <th class="py-1 px-1 hidden md:table-cell">{{ t('downloads.hoster') }}</th>
-          <th class="py-1 px-1">{{ t('downloads.status') }}</th>
-          <th class="py-1 px-1 text-right hidden md:table-cell">{{ t('downloads.speed') }}</th>
-          <th class="py-1 px-1 text-right hidden lg:table-cell">{{ t('downloads.eta') }}</th>
-          <th class="py-1 px-1 min-w-[90px]">{{ t('downloads.progress') }}</th>
-          <th class="py-1 px-1 hidden lg:table-cell">{{ t('downloads.comment') }}</th>
-          <th class="w-20" />
-        </tr>
-      </thead>
-      <tbody>
-        <template v-for="pkg in visiblePackages" :key="pkg.uuid">
-          <tr
-            class="border-b border-border/60 hover:bg-surface-2/60"
-            @contextmenu.prevent="showMenu($event, 'package', pkg.uuid)"
-          >
-            <td class="py-1.5">
-              <button type="button" class="text-muted px-1" @click="toggleExpand(pkg.uuid)">
-                {{ expanded.has(pkg.uuid) ? '▾' : '▸' }}
-              </button>
-            </td>
-            <td class="py-1.5 font-medium truncate max-w-[280px]" :title="pkg.name">{{ pkg.name }}</td>
-            <td class="py-1.5 px-1 text-right tabular-nums hidden md:table-cell">{{ formatSize(pkg.bytesTotal) }}</td>
-            <td class="py-1.5 px-1 text-muted hidden md:table-cell truncate max-w-[120px]">
-              {{ (pkg.hosts ?? []).join(', ') || '—' }}
-            </td>
-            <td class="py-1.5 px-1" :class="statusClass(pkg.status, pkg.finished)">{{ pkg.status || '—' }}</td>
-            <td class="py-1.5 px-1 text-right tabular-nums hidden md:table-cell">{{ formatSpeed(pkg.speed) }}</td>
-            <td class="py-1.5 px-1 text-right tabular-nums hidden lg:table-cell">{{ formatEta(pkg.eta) }}</td>
-            <td class="py-1.5 px-1">
-              <div class="h-2 rounded bg-surface-3 overflow-hidden">
-                <div
-                  class="h-full progress-fill"
-                  :style="{ width: `${progress(pkg.bytesLoaded, pkg.bytesTotal)}%` }"
-                />
-              </div>
-            </td>
-            <td class="py-1.5 px-1 text-xs text-muted truncate max-w-[160px] hidden lg:table-cell" :title="pkg.comment">
-              {{ pkg.comment || '' }}
-            </td>
-            <td class="py-1.5 text-right">
-              <button
-                type="button"
-                class="text-xs text-accent-text hover:underline"
-                @click="moveTarget = { uuid: pkg.uuid, saveTo: pkg.saveTo }"
-              >
-                {{ t('downloads.move') }}
-              </button>
-            </td>
-          </tr>
-          <tr
-            v-for="link in expanded.has(pkg.uuid) ? downloads.linksForPackage(pkg.uuid) : []"
-            :key="link.uuid"
-            class="bg-surface/40 border-b border-border/40 text-xs"
-            @contextmenu.prevent="showMenu($event, 'link', link.uuid)"
-          >
-            <td class="py-1 pl-2">
-              <input
-                type="checkbox"
-                :checked="downloads.selected.has(link.uuid)"
-                @change="downloads.toggleSelect(link.uuid)"
-              />
-            </td>
-            <td class="py-1 pl-4 truncate max-w-[280px]" :title="link.name">{{ link.name }}</td>
-            <td class="py-1 px-1 text-right hidden md:table-cell">{{ formatSize(link.bytesTotal) }}</td>
-            <td class="py-1 px-1 hidden md:table-cell">{{ link.host || '—' }}</td>
-            <td class="py-1 px-1" :class="statusClass(link.status, link.finished, link.running)">
-              {{ link.status || '—' }}
-            </td>
-            <td class="py-1 px-1 text-right hidden md:table-cell">{{ formatSpeed(link.speed) }}</td>
-            <td class="py-1 px-1 text-right hidden lg:table-cell">{{ formatEta(link.eta) }}</td>
-            <td class="py-1 px-1">
-              <div class="h-1.5 rounded bg-surface-3 overflow-hidden">
-                <div
-                  class="h-full progress-fill"
-                  :style="{ width: `${progress(link.bytesLoaded, link.bytesTotal)}%` }"
-                />
-              </div>
-            </td>
-            <td class="hidden lg:table-cell" />
-            <td />
-          </tr>
-        </template>
-      </tbody>
-    </table>
 
-    <p v-if="!visiblePackages.length" class="text-sm text-muted p-6 text-center">{{ t('common.empty') }}</p>
+    <div class="jd-panel rounded-[16px] overflow-hidden min-w-[720px]">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="text-left text-[11px] uppercase tracking-wide text-muted bg-surface-2/50 border-b border-border">
+            <th class="w-9 py-2.5 pl-2" />
+            <th class="py-2.5 pr-2 font-medium">{{ t('downloads.name') }}</th>
+            <th class="py-2.5 px-2 text-right font-medium hidden md:table-cell">{{ t('downloads.size') }}</th>
+            <th class="py-2.5 px-2 font-medium hidden md:table-cell">{{ t('downloads.hoster') }}</th>
+            <th class="py-2.5 px-2 font-medium">{{ t('downloads.status') }}</th>
+            <th class="py-2.5 px-2 text-right font-medium hidden md:table-cell">{{ t('downloads.speed') }}</th>
+            <th class="py-2.5 px-2 text-right font-medium hidden lg:table-cell">{{ t('downloads.eta') }}</th>
+            <th class="py-2.5 px-2 font-medium min-w-[110px]">{{ t('downloads.progress') }}</th>
+            <th class="py-2.5 px-2 font-medium hidden lg:table-cell">{{ t('downloads.comment') }}</th>
+            <th class="w-24" />
+          </tr>
+        </thead>
+        <tbody>
+          <template v-for="pkg in visiblePackages" :key="pkg.uuid">
+            <tr
+              class="border-b border-border/50 hover:bg-surface-2/40 transition-colors"
+              @contextmenu.prevent="showMenu($event, 'package', pkg.uuid)"
+            >
+              <td class="py-2.5 pl-2">
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center size-7 rounded-[8px] text-muted hover:bg-surface-3 hover:text-foreground"
+                  @click="toggleExpand(pkg.uuid)"
+                >
+                  <ChevronDown v-if="expanded.has(pkg.uuid)" class="size-3.5" aria-hidden="true" />
+                  <ChevronRight v-else class="size-3.5" aria-hidden="true" />
+                </button>
+              </td>
+              <td class="py-2.5 font-medium truncate max-w-[280px]" :title="pkg.name">{{ pkg.name }}</td>
+              <td class="py-2.5 px-2 text-right tabular-nums text-muted hidden md:table-cell">{{ formatSize(pkg.bytesTotal) }}</td>
+              <td class="py-2.5 px-2 text-muted hidden md:table-cell truncate max-w-[120px]">
+                {{ (pkg.hosts ?? []).join(', ') || '—' }}
+              </td>
+              <td class="py-2.5 px-2">
+                <span class="jd-chip" :class="statusClass(pkg.status, pkg.finished)">{{ pkg.status || '—' }}</span>
+              </td>
+              <td class="py-2.5 px-2 text-right tabular-nums hidden md:table-cell">{{ formatSpeed(pkg.speed) }}</td>
+              <td class="py-2.5 px-2 text-right tabular-nums hidden lg:table-cell">{{ formatEta(pkg.eta) }}</td>
+              <td class="py-2.5 px-2">
+                <div class="h-2 rounded-full bg-surface-3 overflow-hidden">
+                  <div
+                    class="h-full progress-fill rounded-full"
+                    :style="{ width: `${progress(pkg.bytesLoaded, pkg.bytesTotal)}%` }"
+                  />
+                </div>
+              </td>
+              <td class="py-2.5 px-2 text-xs text-muted truncate max-w-[160px] hidden lg:table-cell" :title="pkg.comment">
+                {{ pkg.comment || '' }}
+              </td>
+              <td class="py-2.5 pr-2 text-right">
+                <button
+                  type="button"
+                  class="jd-btn jd-btn-ghost !px-2 !py-1 text-xs text-accent-text"
+                  @click="moveTarget = { uuid: pkg.uuid, saveTo: pkg.saveTo }"
+                >
+                  <FolderInput class="size-3.5" aria-hidden="true" />
+                  {{ t('downloads.move') }}
+                </button>
+              </td>
+            </tr>
+            <tr
+              v-for="link in expanded.has(pkg.uuid) ? downloads.linksForPackage(pkg.uuid) : []"
+              :key="link.uuid"
+              class="bg-surface-2/25 border-b border-border/40 text-xs"
+              @contextmenu.prevent="showMenu($event, 'link', link.uuid)"
+            >
+              <td class="py-1.5 pl-3">
+                <input
+                  type="checkbox"
+                  class="accent-[var(--jd-primary)]"
+                  :checked="downloads.selected.has(link.uuid)"
+                  @change="downloads.toggleSelect(link.uuid)"
+                />
+              </td>
+              <td class="py-1.5 pl-4 truncate max-w-[280px]" :title="link.name">{{ link.name }}</td>
+              <td class="py-1.5 px-2 text-right hidden md:table-cell">{{ formatSize(link.bytesTotal) }}</td>
+              <td class="py-1.5 px-2 hidden md:table-cell">{{ link.host || '—' }}</td>
+              <td class="py-1.5 px-2" :class="statusClass(link.status, link.finished, link.running)">
+                {{ link.status || '—' }}
+              </td>
+              <td class="py-1.5 px-2 text-right hidden md:table-cell">{{ formatSpeed(link.speed) }}</td>
+              <td class="py-1.5 px-2 text-right hidden lg:table-cell">{{ formatEta(link.eta) }}</td>
+              <td class="py-1.5 px-2">
+                <div class="h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                  <div
+                    class="h-full progress-fill rounded-full"
+                    :style="{ width: `${progress(link.bytesLoaded, link.bytesTotal)}%` }"
+                  />
+                </div>
+              </td>
+              <td class="hidden lg:table-cell" />
+              <td />
+            </tr>
+          </template>
+        </tbody>
+      </table>
 
-    <div v-if="downloads.selected.size" class="fixed bottom-12 left-1/2 -translate-x-1/2 flex gap-2 bg-surface border border-border rounded-[14px] px-3 py-2 shadow-lg text-sm">
-      <button type="button" class="px-2 py-1 rounded-[10px] bg-primary text-primary-fg" @click="downloads.forceSelected()">
+      <p v-if="!visiblePackages.length" class="text-sm text-muted p-10 text-center">{{ t('common.empty') }}</p>
+    </div>
+
+    <div
+      v-if="downloads.selected.size"
+      class="jd-panel fixed bottom-14 left-1/2 -translate-x-1/2 flex gap-2 rounded-[16px] px-3 py-2.5 text-sm z-30"
+    >
+      <button type="button" class="jd-btn jd-btn-primary" @click="downloads.forceSelected()">
         {{ t('downloads.force') }}
       </button>
-      <button type="button" class="px-2 py-1 rounded-[10px] border border-border" @click="downloads.removeSelected()">
+      <button type="button" class="jd-btn jd-btn-ghost" @click="downloads.removeSelected()">
         {{ t('common.remove') }}
       </button>
     </div>
