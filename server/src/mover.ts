@@ -8,6 +8,7 @@ import { dispatchWebhook } from './webhooks.js'
 import { log } from './log.js'
 import { noteMoverTick } from './metrics.js'
 import { getAppSettings } from './settings.js'
+import { archivesListReady, extractionBlocksMover, extractionStateFromStatus } from './extraction.js'
 
 interface PackageInfo {
   uuid: number
@@ -106,6 +107,8 @@ async function processFinishedPackages(): Promise<MoverRunResult> {
     const target = libraryPathForStaging(pkg.saveTo)
     if (!target) continue
     if (pkg.comment?.startsWith('jdweb-mover:')) continue
+    const extraction = extractionStateFromStatus(pkg.status, pkg.finished)
+    if (extractionBlocksMover(extraction)) continue
     try {
       const ready = await archivesReady(pkg.uuid)
       if (!ready) continue
@@ -152,12 +155,11 @@ async function processFinishedPackages(): Promise<MoverRunResult> {
 async function archivesReady(packageUuid: number): Promise<boolean> {
   try {
     const archives = await jdCall<ArchiveInfo[]>('/extraction/getArchiveInfo', [], [packageUuid])
-    if (!archives || archives.length === 0) return true
-    // When archives remain listed without a successful extraction path, skip.
-    // JD removes archive entries after successful extract when configured to delete archives.
-    return archives.every((a) => Boolean(a.archiveId))
+    // JD typically drops archive entries after a successful extract.
+    return archivesListReady(archives)
   } catch {
-    return true
+    // Fail closed: do not move while extraction status is unknown.
+    return false
   }
 }
 
