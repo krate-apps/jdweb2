@@ -12,7 +12,7 @@ jdweb versions with **semantic-release** on every push to `main` that contains r
 | type with `!` (breaking) | major |
 | `chore`, `docs`, `test`, `ci`, `build`, `style`, `refactor` | no release |
 
-Current published image: `ghcr.io/krate-apps/jdweb:1.2.0` (<!-- jdweb-version -->1.2.0<!-- /jdweb-version -->).
+Current published image: `ghcr.io/krate-apps/jdweb:1.2.1` (<!-- jdweb-version -->1.2.1<!-- /jdweb-version -->).
 
 ## What a release does
 

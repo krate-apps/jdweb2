@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/krate-apps/jdweb/compare/v1.2.0...v1.2.1) (2026-11-10)
+
+### Bug Fixes
+
+* resolve asset URLs from CSP-safe base-path meta ([aff67ea](https://github.com/krate-apps/jdweb/commit/aff67ea0cba63c57590af95c81965f4e84f51a1b))
+
 ## [1.2.0](https://github.com/krate-apps/jdweb/compare/v1.1.0...v1.2.0) (2026-11-10)
 
 ### Features

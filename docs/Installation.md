@@ -45,7 +45,7 @@ Vite UI: `http://127.0.0.1:5173` (proxies `/api` to the server). Do **not** expo
 
 ## Docker
 
-Published image: `ghcr.io/krate-apps/jdweb:1.2.0` (<!-- jdweb-version -->1.2.0<!-- /jdweb-version -->).
+Published image: `ghcr.io/krate-apps/jdweb:1.2.1` (<!-- jdweb-version -->1.2.1<!-- /jdweb-version -->).
 
 ```bash
 cp .env.example .env   # optional; secrets auto-create under the data volume
