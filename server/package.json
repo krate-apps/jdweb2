@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx --test src/crypto.test.ts && tsx --test src/library.test.ts && tsx --test src/users.test.ts && tsx --test src/security.test.ts && tsx --test src/settings.test.ts && tsx --test src/backup.test.ts && tsx --test src/extraction.test.ts && tsx --test src/oidc.test.ts"
+    "test": "tsx --test src/crypto.test.ts && tsx --test src/library.test.ts && tsx --test src/users.test.ts && tsx --test src/security.test.ts && tsx --test src/settings.test.ts && tsx --test src/backup.test.ts && tsx --test src/extraction.test.ts && tsx --test src/oidc.test.ts && tsx --test src/config.test.ts && tsx --test src/destinations.test.ts && tsx --test src/webhooks.test.ts && tsx --test src/metrics.test.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",

@@ -39,25 +39,41 @@ describe('isPrivateOrLoopbackHost', () => {
 describe('assertSafeJdApiUrl', () => {
   it('accepts private http URLs', () => {
     assert.equal(assertSafeJdApiUrl('http://127.0.0.1:49247/'), 'http://127.0.0.1:49247')
+    assert.equal(assertSafeJdApiUrl('http://host.docker.internal:3128'), 'http://host.docker.internal:3128')
   })
 
   it('rejects public and invalid URLs', () => {
     assert.throws(() => assertSafeJdApiUrl('http://example.com:3128'), /jd_api_url_not_private/)
     assert.throws(() => assertSafeJdApiUrl('not-a-url'), /invalid_jd_api_url/)
     assert.throws(() => assertSafeJdApiUrl('ftp://127.0.0.1:3128'), /invalid_jd_api_url/)
+    assert.throws(() => assertSafeJdApiUrl('http://user:pass@127.0.0.1:3128'), /invalid_jd_api_url/)
   })
 })
 
 describe('assertSafeWebhookUrl', () => {
   it('accepts public https URLs', () => {
     assert.equal(assertSafeWebhookUrl('https://hooks.example.com/x'), 'https://hooks.example.com/x')
+    assert.equal(assertSafeWebhookUrl('http://example.com/hook'), 'http://example.com/hook')
   })
 
   it('rejects private and metadata hosts', () => {
     assert.throws(() => assertSafeWebhookUrl('http://127.0.0.1/hook'), /webhook_url_not_public/)
     assert.throws(() => assertSafeWebhookUrl('http://10.0.0.1/hook'), /webhook_url_not_public/)
     assert.throws(() => assertSafeWebhookUrl('http://169.254.169.254/latest'), /webhook_url_not_public/)
+    assert.throws(() => assertSafeWebhookUrl('http://host.docker.internal/hook'), /webhook_url_not_public/)
     assert.throws(() => assertSafeWebhookUrl('ftp://example.com/x'), /invalid_url/)
+    assert.throws(() => assertSafeWebhookUrl('https://user:pass@example.com/x'), /invalid_url/)
+  })
+})
+
+describe('isPrivateOrLoopbackHost ipv6', () => {
+  it('accepts ULA and link-local', () => {
+    assert.equal(isPrivateOrLoopbackHost('fd12:3456:789a::1'), true)
+    assert.equal(isPrivateOrLoopbackHost('fe80::1'), true)
+  })
+
+  it('rejects public ipv6', () => {
+    assert.equal(isPrivateOrLoopbackHost('2001:4860:4860::8888'), false)
   })
 })
 

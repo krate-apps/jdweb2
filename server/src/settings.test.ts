@@ -16,7 +16,12 @@ process.env.JDWEB_OTHER_DIR = join(root, 'other')
 process.env.JDWEB_MOVER_INTERVAL_MS = '15000'
 
 const { closeDb, initDb } = await import('./db.js')
-const { getAppSettings, initAppSettings, updateAppSettings } = await import('./settings.js')
+const {
+  assertSafeBasePath,
+  getAppSettings,
+  initAppSettings,
+  updateAppSettings,
+} = await import('./settings.js')
 
 before(() => {
   initDb()
@@ -56,5 +61,20 @@ describe('app settings', () => {
 
   it('rejects public JD URLs', () => {
     assert.throws(() => updateAppSettings({ jdApiUrl: 'http://1.1.1.1:3128' }), /jd_api_url_not_private/)
+  })
+
+  it('updates base path and rejects invalid ones', () => {
+    const s = updateAppSettings({ basePath: '/apps/jdweb' })
+    assert.equal(s.basePath, '/apps/jdweb')
+    assert.throws(() => updateAppSettings({ basePath: '/foo bar' }), /invalid_base_path/)
+    assert.throws(() => updateAppSettings({ moverIntervalMs: -1 }), /invalid_mover_interval/)
+  })
+
+  it('assertSafeBasePath accepts prefixes and rejects traversal', () => {
+    assert.equal(assertSafeBasePath(''), '')
+    assert.equal(assertSafeBasePath('/jdweb'), '/jdweb')
+    assert.equal(assertSafeBasePath('apps/jdweb'), '/apps/jdweb')
+    assert.throws(() => assertSafeBasePath('/../etc'), /invalid_base_path/)
+    assert.throws(() => assertSafeBasePath('/foo//bar'), /invalid_base_path/)
   })
 })

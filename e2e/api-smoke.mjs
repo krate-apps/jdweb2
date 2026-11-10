@@ -50,6 +50,12 @@ function parseSetCookie(res) {
   return single ? single.split(';')[0] : ''
 }
 
+async function expectStatus(res, status, label) {
+  if (res.status !== status) {
+    throw new Error(`${label}: expected ${status}, got ${res.status} ${await res.text()}`)
+  }
+}
+
 async function main() {
   rmSync(dbPath, { force: true })
   rmSync(`${dbPath}-wal`, { force: true })
@@ -73,7 +79,29 @@ async function main() {
   })
 
   try {
-    await waitHttp(`${base}/api/health`)
+    const health = await waitHttp(`${base}/api/health`)
+    await expectStatus(health, 200, 'health')
+    const healthBody = await health.json()
+    if (!healthBody.ok) throw new Error(`health not ok: ${JSON.stringify(healthBody)}`)
+    if ('jdApiUrl' in healthBody) throw new Error('health must not expose jdApiUrl')
+    if (healthBody.jdReachable !== true) throw new Error(`jd not reachable: ${JSON.stringify(healthBody)}`)
+
+    const badLogin = await fetch(`${base}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'wrong-password' }),
+    })
+    await expectStatus(badLogin, 401, 'bad login')
+
+    const unauthMe = await fetch(`${base}/api/auth/me`)
+    await expectStatus(unauthMe, 401, 'unauth me')
+
+    const unauthEvents = await fetch(`${base}/api/events`)
+    await expectStatus(unauthEvents, 401, 'unauth events')
+
+    const unauthSettings = await fetch(`${base}/api/settings`)
+    await expectStatus(unauthSettings, 401, 'unauth settings')
+
     const login = await fetch(`${base}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -90,7 +118,6 @@ async function main() {
 
     const events = await fetch(`${base}/api/events`, { headers: { Cookie: cookie } })
     if (!events.ok) throw new Error(`events failed: ${events.status}`)
-    // Read a small chunk then abort — proves SSE auth works.
     const reader = events.body?.getReader()
     if (reader) {
       const { value } = await reader.read()
@@ -101,10 +128,51 @@ async function main() {
     const staging = await fetch(`${base}/api/staging`, { headers: { Cookie: cookie } })
     if (!staging.ok) throw new Error(`staging failed: ${staging.status}`)
 
+    const settings = await fetch(`${base}/api/settings`, { headers: { Cookie: cookie } })
+    await expectStatus(settings, 200, 'settings')
+    const settingsBody = await settings.json()
+    const jdUrl = settingsBody.jdApiUrl ?? settingsBody.settings?.jdApiUrl
+    if (!String(jdUrl || '').includes(String(jdPort))) {
+      throw new Error(`unexpected settings: ${JSON.stringify(settingsBody)}`)
+    }
+
+    const webhooks = await fetch(`${base}/api/webhooks`, { headers: { Cookie: cookie } })
+    await expectStatus(webhooks, 200, 'webhooks')
+    const webhooksBody = await webhooks.json()
+    if (!Array.isArray(webhooksBody.webhooks)) throw new Error('webhooks list missing')
+
+    const badWebhook = await fetch(`${base}/api/webhooks`, {
+      method: 'POST',
+      headers: { Cookie: cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: 'http://127.0.0.1/hook', events: ['download.finished'] }),
+    })
+    if (badWebhook.status < 400) throw new Error(`private webhook should fail: ${badWebhook.status}`)
+
+    const history = await fetch(`${base}/api/mover/history`, { headers: { Cookie: cookie } })
+    await expectStatus(history, 200, 'mover history')
+
+    const jdLinks = await fetch(`${base}/api/jd/downloadsV2/queryLinks`, {
+      method: 'POST',
+      headers: { Cookie: cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ params: [{}] }),
+    })
+    await expectStatus(jdLinks, 200, 'jd queryLinks')
+    const jdBody = await jdLinks.json()
+    if (!Array.isArray(jdBody.data)) throw new Error(`jd proxy unexpected: ${JSON.stringify(jdBody)}`)
+
     const spa = await fetch(`${base}/`)
     if (!spa.ok) throw new Error(`spa failed: ${spa.status}`)
     const html = await spa.text()
     if (!html.includes('jdweb') && !html.includes('app')) throw new Error('spa html unexpected')
+    if (!html.includes('jdweb-base-path')) throw new Error('spa missing base-path meta')
+
+    const logout = await fetch(`${base}/api/auth/logout`, {
+      method: 'POST',
+      headers: { Cookie: cookie },
+    })
+    await expectStatus(logout, 200, 'logout')
+    const meAfter = await fetch(`${base}/api/auth/me`, { headers: { Cookie: cookie } })
+    await expectStatus(meAfter, 401, 'me after logout')
 
     console.log('e2e api-smoke OK')
   } finally {
