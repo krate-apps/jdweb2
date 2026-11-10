@@ -1,10 +1,16 @@
 # jdweb
 
-[![CI](https://github.com/krate-apps/jdweb/actions/workflows/ci.yml/badge.svg)](https://github.com/krate-apps/jdweb/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/krate-apps/jdweb)](https://github.com/krate-apps/jdweb/releases)
-[![GHCR](https://img.shields.io/badge/GHCR-krate--apps%2Fjdweb-blue)](https://github.com/krate-apps/jdweb/pkgs/container/jdweb)
-[![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org/)
-[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-lightgrey)](LICENSE)
+<p align="center">
+  <img src="web/public/favicon.svg" width="96" height="96" alt="jdweb" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/krate-apps/jdweb/actions/workflows/ci.yml"><img src="https://github.com/krate-apps/jdweb/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/krate-apps/jdweb/releases"><img src="https://img.shields.io/github/v/release/krate-apps/jdweb" alt="Release" /></a>
+  <a href="https://github.com/krate-apps/jdweb/pkgs/container/jdweb"><img src="https://img.shields.io/badge/GHCR-krate--apps%2Fjdweb-blue" alt="GHCR" /></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node.js" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Unlicense-lightgrey" alt="Unlicense" /></a>
+</p>
 
 Self-hosted web UI for [JDownloader 2](https://jdownloader.org/). A Vue app and a small Node API sit in front of JDownloader’s **local** HTTP API — the browser never talks to JD directly.
 
@@ -14,9 +20,15 @@ Browser ──HTTPS──▶ reverse proxy ──HTTP──▶ jdweb (:8787)
                                               └── HTTP ──▶ JDownloader local API
 ```
 
-## Quick start
+## Requirements
 
-Requires **Node.js 22+** (26 LTS recommended), **pnpm 9**, and JDownloader with the local HTTP API enabled.
+| | |
+|---|---|
+| **Node.js** | `>=22` (`engines` in `package.json`; **26** in CI and the Docker image) |
+| **pnpm** | **9.7.0** (`packageManager` field — `corepack enable` then `corepack prepare`) |
+| **JDownloader 2** | Local HTTP API enabled |
+
+## Quick start
 
 ```bash
 pnpm install && pnpm build && pnpm start
@@ -41,18 +53,12 @@ Path prefix without rebuild: `JDWEB_BASE_PATH=/alice/jdweb docker compose up -d`
 
 ## Documentation
 
-Full guides live in [`docs/`](docs/Home.md) (also published to the [Wiki](https://github.com/krate-apps/jdweb/wiki)):
+Guides are in [`docs/`](docs/Home.md) and on the [Wiki](https://github.com/krate-apps/jdweb/wiki).
 
-| | |
-|---|---|
-| [Installation](docs/Installation.md) · [Configuration](docs/Configuration.md) · [Running](docs/Running.md) | Install, env, systemd |
-| [Reverse proxy](docs/Reverse-proxy.md) · [Authentication](docs/Authentication.md) | Caddy / nginx / Apache, sessions |
-| [Destinations & mover](docs/Destinations-and-library-mover.md) · [Webhooks](docs/Webhooks.md) | Library moves, notifications |
-| [API](docs/API.md) · [Troubleshooting](docs/Troubleshooting.md) · [Releases](docs/Release.md) | Endpoints, ops, GHCR |
-
-```bash
-pnpm docs:publish   # push docs/ to the GitHub Wiki
-```
+- [Installation](docs/Installation.md) · [Configuration](docs/Configuration.md) · [Running](docs/Running.md)
+- [Reverse proxy](docs/Reverse-proxy.md) · [Authentication](docs/Authentication.md)
+- [Destinations & mover](docs/Destinations-and-library-mover.md) · [Webhooks](docs/Webhooks.md)
+- [API](docs/API.md) · [Troubleshooting](docs/Troubleshooting.md)
 
 ## License
 
