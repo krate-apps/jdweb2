@@ -99,6 +99,26 @@ function decodeJwtPayload(idToken: string): Record<string, unknown> {
   return JSON.parse(json) as Record<string, unknown>
 }
 
+const ID_TOKEN_SKEW_SEC = 60
+
+/** Validate iss / aud / exp on a decoded id_token payload (signature still via TLS to IdP). */
+export function assertIdTokenClaims(
+  claims: Record<string, unknown>,
+  expected: { issuer: string; clientId: string },
+  nowSec = Math.floor(Date.now() / 1000),
+): void {
+  if (claims.iss !== expected.issuer) throw new Error('oidc_invalid_token')
+  const aud = claims.aud
+  const audOk =
+    aud === expected.clientId ||
+    (Array.isArray(aud) && aud.some((a) => a === expected.clientId))
+  if (!audOk) throw new Error('oidc_invalid_token')
+  if (typeof claims.exp !== 'number' || !Number.isFinite(claims.exp)) {
+    throw new Error('oidc_invalid_token')
+  }
+  if (claims.exp + ID_TOKEN_SKEW_SEC < nowSec) throw new Error('oidc_token_expired')
+}
+
 export async function exchangeCode(code: string, state: string): Promise<PublicUser> {
   const cfg = oidcConfig()
   const verifier = takeOidcPending(state)
@@ -123,6 +143,7 @@ export async function exchangeCode(code: string, state: string): Promise<PublicU
   let claims: Record<string, unknown> = {}
   if (tokenJson.id_token) {
     claims = decodeJwtPayload(tokenJson.id_token)
+    assertIdTokenClaims(claims, { issuer: cfg.issuer, clientId: cfg.clientId })
   } else if (tokenJson.access_token && disco.userinfo_endpoint) {
     const ui = await fetch(disco.userinfo_endpoint, {
       headers: { Authorization: `Bearer ${tokenJson.access_token}` },
