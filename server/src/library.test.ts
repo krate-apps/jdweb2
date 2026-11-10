@@ -13,12 +13,12 @@ mkdirSync(join(shows, 'Show', 'Season 2'), { recursive: true })
 mkdirSync(join(other, 'Misc'), { recursive: true })
 writeFileSync(join(movies, 'readme.txt'), 'skip')
 
-process.env.JDWEB_DB_PATH = join(root, 'test.sqlite')
-process.env.JDWEB_SESSION_SECRET = 'test-secret-for-jdweb'
-process.env.JDWEB_DATA_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
-process.env.JDWEB_MOVIES_DIR = movies
-process.env.JDWEB_SHOWS_DIR = shows
-process.env.JDWEB_OTHER_DIR = other
+process.env.JDWEB2_DB_PATH = join(root, 'test.sqlite')
+process.env.JDWEB2_SESSION_SECRET = 'test-secret-for-jdweb'
+process.env.JDWEB2_DATA_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+process.env.JDWEB2_MOVIES_DIR = movies
+process.env.JDWEB2_SHOWS_DIR = shows
+process.env.JDWEB2_OTHER_DIR = other
 
 const { initDb, closeDb } = await import('./db.js')
 const { initAppSettings } = await import('./settings.js')

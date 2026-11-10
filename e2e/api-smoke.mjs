@@ -9,7 +9,7 @@ import { resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
 const jdPort = Number(process.env.MOCK_JD_PORT || 13128)
-const port = Number(process.env.JDWEB_PORT || 8787)
+const port = Number(process.env.JDWEB2_PORT || 8787)
 const base = `http://127.0.0.1:${port}`
 const dbPath = resolve(root, 'data/e2e.sqlite')
 
@@ -74,14 +74,14 @@ async function main() {
   })
 
   const server = run('node', ['server/dist/index.js'], {
-    JDWEB_HOST: '127.0.0.1',
-    JDWEB_PORT: String(port),
+    JDWEB2_HOST: '127.0.0.1',
+    JDWEB2_PORT: String(port),
     JD_API_URL: `http://127.0.0.1:${jdPort}`,
-    JDWEB_DB_PATH: dbPath,
-    JDWEB_USER: 'admin',
-    JDWEB_PASSWORD: 'password123',
-    JDWEB_SESSION_SECRET: 'e2e-session-secret-not-for-prod',
-    JDWEB_DATA_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    JDWEB2_DB_PATH: dbPath,
+    JDWEB2_USER: 'admin',
+    JDWEB2_PASSWORD: 'password123',
+    JDWEB2_SESSION_SECRET: 'e2e-session-secret-not-for-prod',
+    JDWEB2_DATA_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
   })
 
   try {

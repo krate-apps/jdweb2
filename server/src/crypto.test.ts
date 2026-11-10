@@ -5,9 +5,9 @@ import { join } from 'node:path'
 import { after, describe, it } from 'node:test'
 
 const root = mkdtempSync(join(tmpdir(), 'jdweb-crypto-'))
-process.env.JDWEB_DB_PATH = join(root, 'test.sqlite')
-process.env.JDWEB_SESSION_SECRET = 'test-secret-for-jdweb'
-process.env.JDWEB_DATA_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+process.env.JDWEB2_DB_PATH = join(root, 'test.sqlite')
+process.env.JDWEB2_SESSION_SECRET = 'test-secret-for-jdweb'
+process.env.JDWEB2_DATA_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
 const { decryptSecret, encryptSecret, hashPassword, verifyPassword } = await import('./crypto.js')
 

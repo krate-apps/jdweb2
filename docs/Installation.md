@@ -11,7 +11,7 @@ pnpm build && pnpm start
 
 Needs Node.js and pnpm (see root `package.json` / `packageManager`). `corepack enable` is enough on recent Node to pick up the pinned pnpm.
 
-On first boot without secrets, jdweb writes **`data/secrets.env`** (mode `600`) with `JDWEB_SESSION_SECRET` and `JDWEB_DATA_KEY`. Open the UI on localhost — the **setup wizard** creates the admin, probes JDownloader, and sets staging/library paths (defaults under `~/medias/jdownloader/…`, stored in SQLite). You can also `POST /api/setup/admin` from loopback — see [Authentication](Authentication).
+On first boot without secrets, jdweb writes **`data/secrets.env`** (mode `600`) with `JDWEB2_SESSION_SECRET` and `JDWEB2_DATA_KEY`. Open the UI on localhost — the **setup wizard** creates the admin, probes JDownloader, and sets staging/library paths (defaults under `~/medias/jdownloader/…`, stored in SQLite). You can also `POST /api/setup/admin` from loopback — see [Authentication](Authentication).
 
 Optional: `cp .env.example .env` only if you need bind address, base path, or DB path. See [Configuration](Configuration).
 
@@ -21,7 +21,7 @@ Optional: `cp .env.example .env` only if you need bind address, base path, or DB
 cp .env.example .env
 ```
 
-Boot-only variables: `JDWEB_HOST`, `JDWEB_PORT`, `JDWEB_BASE_PATH`, `JDWEB_DB_PATH`, secrets (or auto `data/secrets.env`), optional `JDWEB_USER` / `JDWEB_PASSWORD` for unattended admin seed.
+Boot-only variables: `JDWEB2_HOST`, `JDWEB2_PORT`, `JDWEB2_BASE_PATH`, `JDWEB2_DB_PATH`, secrets (or auto `data/secrets.env`), optional `JDWEB2_USER` / `JDWEB2_PASSWORD` for unattended admin seed.
 
 JD URL and library paths belong in **Settings** (or the wizard), not in `.env` (env can only *seed* them once — see [Configuration](Configuration)).
 
@@ -32,9 +32,9 @@ pnpm build
 pnpm start
 ```
 
-`pnpm build` compiles the Vue app (`web/dist`) and the TypeScript server (`server/dist`). The server listens on `JDWEB_HOST`:`JDWEB_PORT` and serves the SPA from `web/dist`.
+`pnpm build` compiles the Vue app (`web/dist`) and the TypeScript server (`server/dist`). The server listens on `JDWEB2_HOST`:`JDWEB2_PORT` and serves the SPA from `web/dist`.
 
-If you change the public path prefix, set `JDWEB_BASE_PATH` (Compose) or edit it in Settings and restart — no UI rebuild.
+If you change the public path prefix, set `JDWEB2_BASE_PATH` (Compose) or edit it in Settings and restart — no UI rebuild.
 
 ## Development
 
@@ -56,7 +56,7 @@ docker compose up -d
 Mounting `./data` is enough for DB, secrets file, staging, and library. The image runs as the non-root `node` user (**UID 1000**); ensure `./data` is writable by that UID (`chown -R 1000:1000 data` on first setup if needed). Path prefix (no rebuild):
 
 ```bash
-JDWEB_BASE_PATH=/alice/jdweb docker compose up -d
+JDWEB2_BASE_PATH=/jdweb docker compose up -d
 ```
 
 JDownloader is **not** in the compose file. After start, set the JD API URL in Settings (from the container, often `http://host.docker.internal:3128` or the host gateway — must stay private/loopback per SSRF rules).
@@ -67,7 +67,7 @@ Details: [Running](Running), [Releases](Release).
 
 Copy together:
 
-- SQLite: `JDWEB_DB_PATH` (default `./data/jdweb.sqlite`)
+- SQLite: `JDWEB2_DB_PATH` (default `./data/jdweb.sqlite`)
 - Secrets: `data/secrets.env` (or your env-provided keys)
 
 Or use Settings → Backup / `GET /api/backup` (authenticated).

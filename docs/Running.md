@@ -15,7 +15,7 @@ pnpm dev:server
 pnpm dev:web
 ```
 
-Open the Vite URL (default `http://127.0.0.1:5173`). API calls under `/api` (and under `JDWEB_BASE_PATH/api` when set) are proxied to the server on port `8787`.
+Open the Vite URL (default `http://127.0.0.1:5173`). API calls under `/api` (and under `JDWEB2_BASE_PATH/api` when set) are proxied to the server on port `8787`.
 
 Do **not** expose Vite (`5173`) on the internet. It is a development tool. Production traffic must hit the Node server (or a reverse proxy in front of it).
 
@@ -33,19 +33,19 @@ Configure JD URL and library paths in the setup wizard or Settings (SQLite). Boo
 Health check (no auth):
 
 ```bash
-curl -sS "http://127.0.0.1:8787${JDWEB_BASE_PATH}/api/health"
+curl -sS "http://127.0.0.1:8787${JDWEB2_BASE_PATH}/api/health"
 ```
 
 Response includes `jdReachable`, `uiBuilt`, `settingsReady`, and `needsSetup`.
 
 ### Listen address
 
-| Goal | Setting |
-|------|---------|
-| Only local / reverse proxy | `JDWEB_HOST=127.0.0.1` (default) |
-| Direct access from LAN/WAN | `JDWEB_HOST=0.0.0.0` and open the firewall |
+| Goal                       | Setting                                     |
+| -------------------------- | ------------------------------------------- |
+| Only local / reverse proxy | `JDWEB2_HOST=127.0.0.1` (default)           |
+| Direct access from LAN/WAN | `JDWEB2_HOST=0.0.0.0` and open the firewall |
 
-Then open `http://YOUR_SERVER_IP:8787/` plus `JDWEB_BASE_PATH` if set. Prefer a reverse proxy for HTTPS instead of opening Node publicly — see [Reverse proxy](Reverse-proxy).
+Then open `http://YOUR_SERVER_IP:8787/` plus `JDWEB2_BASE_PATH` if set. Prefer a reverse proxy for HTTPS instead of opening Node publicly — see [Reverse proxy](Reverse-proxy).
 
 ### HTTPS
 
@@ -84,14 +84,14 @@ docker compose up -d
 Compose:
 
 - Uses `image: ghcr.io/krate-apps/jdweb:…` (updated on each release)
-- Sets `JDWEB_HOST=0.0.0.0` inside the container
+- Sets `JDWEB2_HOST=0.0.0.0` inside the container
 - Mounts `./data` → `/data` for SQLite, `secrets.env`, staging, and library dirs
 - Loads `.env` when present (override paths are set to `/data/...`)
 
 Path prefix (runtime, no rebuild):
 
 ```bash
-JDWEB_BASE_PATH=/alice/jdweb docker compose up -d
+JDWEB2_BASE_PATH=/jdweb docker compose up -d
 ```
 
 Or set the prefix in Settings after first login (when env is unset) and restart.

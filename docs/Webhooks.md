@@ -4,11 +4,11 @@ jdweb can POST a small JSON payload to configured HTTP endpoints when packages f
 
 ## Events
 
-| Event | When |
-|-------|------|
+| Event               | When                                                      |
+| ------------------- | --------------------------------------------------------- |
 | `download.finished` | The server poller detects a package newly marked finished |
-| `mover.succeeded` | The mover copied a package into the library |
-| `mover.failed` | The mover failed for a package |
+| `mover.succeeded`   | The mover copied a package into the library               |
+| `mover.failed`      | The mover failed for a package                            |
 
 ## Payload
 
@@ -36,16 +36,16 @@ Webhook URLs must be public `http`/`https` hosts. Private, loopback, and link-lo
 
 ### Environment seed
 
-Set `JDWEB_WEBHOOK_URLS` to a comma-separated list of URLs. They are inserted **once** when the `webhooks` table is empty (all events enabled). Later edits are done in the UI/API; changing the env var alone does not update existing rows.
+Set `JDWEB2_WEBHOOK_URLS` to a comma-separated list of URLs. They are inserted **once** when the `webhooks` table is empty (all events enabled). Later edits are done in the UI/API; changing the env var alone does not update existing rows.
 
 ### API
 
-| Method | Path | Body / notes |
-|--------|------|----------------|
-| `GET` | `/api/webhooks` | List |
-| `POST` | `/api/webhooks` | `{ "url", "events"?, "enabled"? }` |
-| `PATCH` | `/api/webhooks/:id` | `{ "url"?, "events"?, "enabled"? }` |
-| `DELETE` | `/api/webhooks/:id` | Remove |
-| `POST` | `/api/webhooks/notify` | `{ "event", "package": { "name", "uuid"?, "saveTo"? }, "error"? }` — starts delivery in the background and returns immediately |
+| Method   | Path                   | Body / notes                                                                                                                   |
+| -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `GET`    | `/api/webhooks`        | List                                                                                                                           |
+| `POST`   | `/api/webhooks`        | `{ "url", "events"?, "enabled"? }`                                                                                             |
+| `PATCH`  | `/api/webhooks/:id`    | `{ "url"?, "events"?, "enabled"? }`                                                                                            |
+| `DELETE` | `/api/webhooks/:id`    | Remove                                                                                                                         |
+| `POST`   | `/api/webhooks/notify` | `{ "event", "package": { "name", "uuid"?, "saveTo"? }, "error"? }` — starts delivery in the background and returns immediately |
 
 Event names must be one of: `download.finished`, `mover.succeeded`, `mover.failed`.

@@ -92,7 +92,7 @@ function noteFinishedPackages(packages: unknown[]): void {
 }
 
 function eventsIntervalMs(): number {
-  const raw = process.env.JDWEB_EVENTS_INTERVAL_MS
+  const raw = process.env.JDWEB2_EVENTS_INTERVAL_MS
   const n = raw ? Number(raw) : 2000
   if (!Number.isFinite(n)) return 2000
   return Math.max(500, Math.min(10_000, n))

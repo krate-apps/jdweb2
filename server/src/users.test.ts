@@ -5,11 +5,11 @@ import { join } from 'node:path'
 import { after, before, describe, it } from 'node:test'
 
 const root = mkdtempSync(join(tmpdir(), 'jdweb-users-'))
-process.env.JDWEB_DB_PATH = join(root, 'test.sqlite')
-process.env.JDWEB_SESSION_SECRET = 'test-secret-for-jdweb'
-process.env.JDWEB_DATA_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
-process.env.JDWEB_USER = 'seedadmin'
-process.env.JDWEB_PASSWORD = 'seed-password-ok'
+process.env.JDWEB2_DB_PATH = join(root, 'test.sqlite')
+process.env.JDWEB2_SESSION_SECRET = 'test-secret-for-jdweb'
+process.env.JDWEB2_DATA_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+process.env.JDWEB2_USER = 'seedadmin'
+process.env.JDWEB2_PASSWORD = 'seed-password-ok'
 
 const { closeDb, initDb } = await import('./db.js')
 const {

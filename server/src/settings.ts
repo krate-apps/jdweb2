@@ -64,13 +64,13 @@ export function assertSafeBasePath(raw: string): string {
 export function defaultsFromEnv(): AppSettings {
   const media = defaultMediaRoot()
   return {
-    basePath: assertSafeBasePath(env('JDWEB_BASE_PATH', '')),
+    basePath: assertSafeBasePath(env('JDWEB2_BASE_PATH', '')),
     jdApiUrl: env('JD_API_URL', 'http://127.0.0.1:3128').replace(/\/+$/, ''),
-    stagingDir: resolveSettingPath(env('JDWEB_STAGING_DIR'), join(media, 'staging')),
-    moviesDir: resolveSettingPath(env('JDWEB_MOVIES_DIR'), join(media, 'library', 'movies')),
-    showsDir: resolveSettingPath(env('JDWEB_SHOWS_DIR'), join(media, 'library', 'shows')),
-    otherDir: resolveSettingPath(env('JDWEB_OTHER_DIR'), join(media, 'library', 'other')),
-    moverIntervalMs: envInt('JDWEB_MOVER_INTERVAL_MS', 15_000),
+    stagingDir: resolveSettingPath(env('JDWEB2_STAGING_DIR'), join(media, 'staging')),
+    moviesDir: resolveSettingPath(env('JDWEB2_MOVIES_DIR'), join(media, 'library', 'movies')),
+    showsDir: resolveSettingPath(env('JDWEB2_SHOWS_DIR'), join(media, 'library', 'shows')),
+    otherDir: resolveSettingPath(env('JDWEB2_OTHER_DIR'), join(media, 'library', 'other')),
+    moverIntervalMs: envInt('JDWEB2_MOVER_INTERVAL_MS', 15_000),
   }
 }
 
@@ -138,11 +138,11 @@ export function initAppSettings(): AppSettings {
 }
 
 /**
- * When JDWEB_BASE_PATH is set (Compose / process env), keep SQLite in sync so
+ * When JDWEB2_BASE_PATH is set (Compose / process env), keep SQLite in sync so
  * a restart picks up the compose value without a UI edit.
  */
 export function syncBasePathFromEnv(): AppSettings {
-  const fromEnv = assertSafeBasePath(env('JDWEB_BASE_PATH', ''))
+  const fromEnv = assertSafeBasePath(env('JDWEB2_BASE_PATH', ''))
   if (!fromEnv) return getAppSettings()
   if (getAppSettings().basePath === fromEnv) return getAppSettings()
   return updateAppSettings({ basePath: fromEnv })
@@ -155,7 +155,7 @@ export function getBasePath(): string {
 
 /** True when compose/process env currently forces the base path. */
 export function basePathForcedByEnv(): boolean {
-  return Boolean(assertSafeBasePath(env('JDWEB_BASE_PATH', '')))
+  return Boolean(assertSafeBasePath(env('JDWEB2_BASE_PATH', '')))
 }
 
 export function getAppSettings(): AppSettings {

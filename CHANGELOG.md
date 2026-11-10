@@ -88,7 +88,7 @@
 * suggest existing library folders for destinations ([f25ced7](https://github.com/krate-apps/jdweb/commit/f25ced7a6892c4acd5021bf669ed1cd5ce1fb7f6))
 * suggest other-library folders in destinations ([c102e93](https://github.com/krate-apps/jdweb/commit/c102e938e40fb125ca552697621ece5fe23f7e55))
 * support DLC containers when adding links ([0d20a16](https://github.com/krate-apps/jdweb/commit/0d20a16b1358290ff2ef983e6a8506fb9ea15151))
-* support JDWEB_DATA_KEY rotation with re-encryption ([003a1c0](https://github.com/krate-apps/jdweb/commit/003a1c01d5db46f23e4fc8880778976b7238b98c))
+* support JDWEB2_DATA_KEY rotation with re-encryption ([003a1c0](https://github.com/krate-apps/jdweb/commit/003a1c01d5db46f23e4fc8880778976b7238b98c))
 * trigger library move manually from the UI ([c8277ec](https://github.com/krate-apps/jdweb/commit/c8277ec8ef909776618eb4d60e2628bb92c5c2f7))
 
 ### Bug Fixes

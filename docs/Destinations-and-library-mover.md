@@ -4,11 +4,11 @@
 
 When adding links (or moving a package), choose a destination kind:
 
-| Kind | Staging under staging dir | Library root |
-|------|---------------------------|--------------|
-| Movies | `movies/<Title>` | movies library `/<Title>` |
+| Kind   | Staging under staging dir | Library root                       |
+| ------ | ------------------------- | ---------------------------------- |
+| Movies | `movies/<Title>`          | movies library `/<Title>`          |
 | Series | `shows/<Name>/Season <N>` | shows library `/<Name>/Season <N>` |
-| Other | `downloads/<Name>` | other library `/<Name>` |
+| Other  | `downloads/<Name>`        | other library `/<Name>`            |
 
 Paths are **app settings** (SQLite / Settings UI), seeded once from env if present.
 Default host seed: `~/medias/jdownloader/staging` and `~/medias/jdownloader/library/…`.
@@ -42,13 +42,13 @@ Failures are also written into the package comment with a `jdweb-mover:` prefix 
 
 ### Manual run and history
 
-| Action | How |
-|--------|-----|
-| Run one mover pass | Settings → **Move finished downloads now**, or `POST /api/mover/run` |
-| Recent moves | Settings → Recent moves, or `GET /api/mover/history?limit=50` |
-| Retarget one package (staging dir only) | UI move dialog → `POST /api/mover/move` |
+| Action                                  | How                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| Run one mover pass                      | Settings → **Move finished downloads now**, or `POST /api/mover/run` |
+| Recent moves                            | Settings → Recent moves, or `GET /api/mover/history?limit=50`        |
+| Retarget one package (staging dir only) | UI move dialog → `POST /api/mover/move`                              |
 
-Set **Library move interval** to `0` in Settings to disable the automatic timer (`JDWEB_MOVER_INTERVAL_MS` only seeds SQLite on first boot). Manual destination changes and **Move finished downloads now** still work.
+Set **Library move interval** to `0` in Settings to disable the automatic timer (`JDWEB2_MOVER_INTERVAL_MS` only seeds SQLite on first boot). Manual destination changes and **Move finished downloads now** still work.
 
 
 ### Permissions and disk layout

@@ -2,25 +2,25 @@ import { defineConfig } from '@playwright/test'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-const port = Number(process.env.SETUP_JDWEB_PORT || 8788)
+const port = Number(process.env.SETUP_JDWEB2_PORT || 8788)
 const jdPort = Number(process.env.SETUP_MOCK_JD_PORT || 13129)
 const dataDir = join(tmpdir(), 'jdweb-setup-ui-e2e')
 const dbPath = join(dataDir, 'setup-ui.sqlite')
 
 const serverEnv = [
-  `JDWEB_HOST=127.0.0.1`,
-  `JDWEB_PORT=${port}`,
+  `JDWEB2_HOST=127.0.0.1`,
+  `JDWEB2_PORT=${port}`,
   `JD_API_URL=http://127.0.0.1:${jdPort}`,
-  `JDWEB_DB_PATH=${dbPath}`,
-  `JDWEB_STAGING_DIR=${dataDir}/staging`,
-  `JDWEB_MOVIES_DIR=${dataDir}/movies`,
-  `JDWEB_SHOWS_DIR=${dataDir}/shows`,
-  `JDWEB_OTHER_DIR=${dataDir}/other`,
-  `JDWEB_SESSION_SECRET=e2e-setup-ui-session-secret-not-for-prod`,
-  `JDWEB_DATA_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`,
+  `JDWEB2_DB_PATH=${dbPath}`,
+  `JDWEB2_STAGING_DIR=${dataDir}/staging`,
+  `JDWEB2_MOVIES_DIR=${dataDir}/movies`,
+  `JDWEB2_SHOWS_DIR=${dataDir}/shows`,
+  `JDWEB2_OTHER_DIR=${dataDir}/other`,
+  `JDWEB2_SESSION_SECRET=e2e-setup-ui-session-secret-not-for-prod`,
+  `JDWEB2_DATA_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`,
   // Clear any inherited seed so the wizard stays first-run.
-  `JDWEB_USER=`,
-  `JDWEB_PASSWORD=`,
+  `JDWEB2_USER=`,
+  `JDWEB2_PASSWORD=`,
 ].join(' ')
 
 export default defineConfig({
