@@ -1,3 +1,24 @@
+## [1.2.0](https://github.com/krate-apps/jdweb/compare/v1.1.0...v1.2.0) (2026-11-10)
+
+### Features
+
+* emit download.finished webhooks from the server poller ([dc6a49e](https://github.com/krate-apps/jdweb/commit/dc6a49e5a2965e3c1e3cd72da56eb27325a7e836))
+
+### Bug Fixes
+
+* **auth:** validate OIDC id_token iss aud and exp ([cdc0a86](https://github.com/krate-apps/jdweb/commit/cdc0a86b60a0b67e3d8d81dde9426fe1a11a4f45))
+* clear download and grabber lists when JD is down ([25ccb4d](https://github.com/krate-apps/jdweb/commit/25ccb4d938801cff1b72e75178f8cbcc3fffa5ca))
+* close DB and exit process after SQLite restore ([d12138e](https://github.com/krate-apps/jdweb/commit/d12138e2d3f47bb55c3739c07c711ffc8bba02b4))
+* **security:** reject private webhook URLs ([3a6a987](https://github.com/krate-apps/jdweb/commit/3a6a987b7ef70e539d1672bccba31ec14840f3a5))
+* **security:** setup loopback ignores X-Forwarded-For ([21d6827](https://github.com/krate-apps/jdweb/commit/21d68272bd3c2f9c25ea2fb29c6034c3e3a0c562))
+* skip mover while archives still extracting ([957a672](https://github.com/krate-apps/jdweb/commit/957a672a8ff66971004f0060826bb0a6988a2c82))
+* timeout hung JDownloader API calls ([f119204](https://github.com/krate-apps/jdweb/commit/f119204a2f0c52e3fcc79642ac1f3ef76f5e7c0f))
+
+### User Experience
+
+* dialog semantics and keyboard context menus ([7a5eeef](https://github.com/krate-apps/jdweb/commit/7a5eeef2a83587c2f3d0fc019405613f5cb091e7))
+* stack download cards on small screens ([122e54f](https://github.com/krate-apps/jdweb/commit/122e54f1e45617c595563f74a143ddcf2054cf19))
+
 ## [1.1.0](https://github.com/krate-apps/jdweb/compare/v1.0.0...v1.1.0) (2026-11-10)
 
 ### Features
