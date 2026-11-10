@@ -15,6 +15,7 @@ import {
 import { useGrabberStore } from '@/stores/grabber'
 import { useDownloadsStore } from '@/stores/downloads'
 import { useAppStore } from '@/stores/app'
+import { useDialogA11y } from '@/composables/useDialogA11y'
 
 type Source = 'links' | 'dlc'
 
@@ -109,6 +110,8 @@ function tryClose() {
   emit('close')
 }
 
+const { panelRef } = useDialogA11y(tryClose, () => !(busy.value && analyzing.value))
+
 async function waitForJob(jobId: number): Promise<CrawlerJob | null> {
   for (let i = 0; i < 120; i++) {
     const job = await queryCrawlerJob(jobId)
@@ -192,9 +195,15 @@ async function submit() {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="tryClose">
-    <div class="w-full max-w-lg rounded-[14px] bg-surface border border-border shadow-lg p-4 space-y-4">
+    <div
+      ref="panelRef"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-links-title"
+      class="w-full max-w-lg rounded-[14px] bg-surface border border-border shadow-lg p-4 space-y-4"
+    >
       <div class="flex items-center justify-between">
-        <h2 class="font-semibold">{{ t('addLinks.title') }}</h2>
+        <h2 id="add-links-title" class="font-semibold">{{ t('addLinks.title') }}</h2>
         <button type="button" class="text-muted hover:text-foreground" :disabled="busy && analyzing" @click="tryClose">
           ✕
         </button>

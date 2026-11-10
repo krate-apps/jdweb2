@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { answerDialog } from '@/api/jd'
+import { useDialogA11y } from '@/composables/useDialogA11y'
 
 const props = defineProps<{
   dialogId: number
@@ -14,6 +15,10 @@ const { t } = useI18n()
 const answer = ref('')
 const busy = ref(false)
 const error = ref<string | null>(null)
+const { panelRef } = useDialogA11y(
+  () => emit('close'),
+  () => !busy.value,
+)
 
 const imageSrc = computed(() => {
   const p = props.properties ?? {}
@@ -52,10 +57,17 @@ async function submit() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" @click.self="emit('close')">
-    <form class="jd-panel w-full max-w-sm rounded-[16px] p-5 space-y-4" @submit.prevent="submit">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" @click.self="!busy && emit('close')">
+    <form
+      ref="panelRef"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="captcha-title"
+      class="jd-panel w-full max-w-sm rounded-[16px] p-5 space-y-4"
+      @submit.prevent="submit"
+    >
       <div class="space-y-1">
-        <h2 class="text-lg font-semibold tracking-tight">{{ t('captcha.title') }}</h2>
+        <h2 id="captcha-title" class="text-lg font-semibold tracking-tight">{{ t('captcha.title') }}</h2>
         <p class="text-sm text-muted leading-relaxed">{{ promptText }}</p>
       </div>
       <img

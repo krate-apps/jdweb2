@@ -4,11 +4,16 @@ import { useI18n } from 'vue-i18n'
 import DestinationFields, { type Kind } from '@/components/ui/DestinationFields.vue'
 import { apiJson } from '@/api/http'
 import { useDownloadsStore } from '@/stores/downloads'
+import { useDialogA11y } from '@/composables/useDialogA11y'
 
 const props = defineProps<{ packageUuid: number; currentSaveTo?: string }>()
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 const downloads = useDownloadsStore()
+const { panelRef } = useDialogA11y(
+  () => emit('close'),
+  () => !busy.value,
+)
 
 const kind = ref<Kind>('other')
 const title = ref('')
@@ -43,9 +48,15 @@ async function submit() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="emit('close')">
-    <div class="w-full max-w-md rounded-[14px] bg-surface border border-border p-4 space-y-4">
-      <h2 class="font-semibold">{{ t('move.title') }}</h2>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="!busy && emit('close')">
+    <div
+      ref="panelRef"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="move-title"
+      class="w-full max-w-md rounded-[14px] bg-surface border border-border p-4 space-y-4"
+    >
+      <h2 id="move-title" class="font-semibold">{{ t('move.title') }}</h2>
       <p v-if="currentSaveTo" class="text-xs text-muted">
         <span>{{ t('move.current') }}</span> {{ currentSaveTo }}
       </p>

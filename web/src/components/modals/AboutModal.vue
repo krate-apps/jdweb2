@@ -5,10 +5,12 @@ import BrandMark from '@/components/ui/BrandMark.vue'
 import { useAppStore } from '@/stores/app'
 import { apiJson } from '@/api/http'
 import { getJdVersion } from '@/api/jd'
+import { useDialogA11y } from '@/composables/useDialogA11y'
 
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
 const app = useAppStore()
+const { panelRef } = useDialogA11y(() => emit('close'))
 
 const version = ref(app.publicConfig?.version ?? '…')
 const jdVersion = ref<string | null>(null)
@@ -42,7 +44,9 @@ onMounted(async () => {
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4" @click.self="emit('close')">
     <div
+      ref="panelRef"
       role="dialog"
+      aria-modal="true"
       aria-labelledby="about-title"
       class="jd-panel w-full max-w-sm rounded-[16px] p-6 space-y-5"
     >

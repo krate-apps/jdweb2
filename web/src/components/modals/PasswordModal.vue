@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { answerDialog, getPasswordList, retryExtraction, setPasswordList } from '@/api/jd'
+import { useDialogA11y } from '@/composables/useDialogA11y'
 
 const props = defineProps<{
   /** JD dialog id (password prompt from the desktop extraction queue). */
@@ -15,6 +16,10 @@ const { t } = useI18n()
 const password = ref('')
 const busy = ref(false)
 const error = ref<string | null>(null)
+const { panelRef } = useDialogA11y(
+  () => emit('close'),
+  () => !busy.value,
+)
 
 const isRetry = computed(() => props.packageUuid != null)
 
@@ -45,9 +50,16 @@ async function submit() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="emit('close')">
-    <form class="w-full max-w-sm rounded-[14px] bg-surface border border-border p-4 space-y-3" @submit.prevent="submit">
-      <h2 class="font-semibold">{{ isRetry ? t('password.retry') : t('password.title') }}</h2>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="!busy && emit('close')">
+    <form
+      ref="panelRef"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="password-title"
+      class="w-full max-w-sm rounded-[14px] bg-surface border border-border p-4 space-y-3"
+      @submit.prevent="submit"
+    >
+      <h2 id="password-title" class="font-semibold">{{ isRetry ? t('password.retry') : t('password.title') }}</h2>
       <p class="text-xs text-muted">{{ isRetry ? t('password.retryHint') : t('password.hint') }}</p>
       <input
         v-model="password"
