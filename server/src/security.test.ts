@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { assertSafeJdApiUrl, isPrivateOrLoopbackHost } from './security.js'
+import { assertSafeJdApiUrl, isLoopbackAddress, isPrivateOrLoopbackHost } from './security.js'
 import { rateLimitAllow, clearRateLimits } from './rate-limit.js'
+
+describe('isLoopbackAddress', () => {
+  it('accepts loopback peers only', () => {
+    assert.equal(isLoopbackAddress('127.0.0.1'), true)
+    assert.equal(isLoopbackAddress('::1'), true)
+    assert.equal(isLoopbackAddress('::ffff:127.0.0.1'), true)
+    assert.equal(isLoopbackAddress('localhost'), true)
+    assert.equal(isLoopbackAddress('10.0.0.1'), false)
+    assert.equal(isLoopbackAddress(''), false)
+  })
+})
 
 describe('isPrivateOrLoopbackHost', () => {
   it('accepts loopback and private ranges', () => {

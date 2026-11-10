@@ -30,7 +30,7 @@ import {
   initAppSettings,
   updateAppSettings,
 } from './settings.js'
-import { assertSafeJdApiUrl } from './security.js'
+import { assertSafeJdApiUrl, isLoopbackAddress } from './security.js'
 import { rateLimitAllow } from './rate-limit.js'
 import { recordAudit } from './audit.js'
 import {
@@ -81,9 +81,7 @@ type Vars = { username: string; sessionId: string; userId: number }
 
 const app = new Hono<{ Variables: Vars }>()
 
-function clientIp(c: Parameters<typeof getConnInfo>[0]): string {
-  const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-  if (forwarded) return forwarded
+function peerAddress(c: Parameters<typeof getConnInfo>[0]): string {
   try {
     return getConnInfo(c).remote.address ?? ''
   } catch {
@@ -91,14 +89,15 @@ function clientIp(c: Parameters<typeof getConnInfo>[0]): string {
   }
 }
 
+function clientIp(c: Parameters<typeof getConnInfo>[0]): string {
+  const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
+  if (forwarded) return forwarded
+  return peerAddress(c)
+}
+
+/** Setup gates use the socket peer only — X-Forwarded-For must not unlock bootstrap. */
 function isLoopback(c: Parameters<typeof getConnInfo>[0]): boolean {
-  const remote = clientIp(c)
-  return (
-    remote === '127.0.0.1' ||
-    remote === '::1' ||
-    remote === '::ffff:127.0.0.1' ||
-    remote === 'localhost'
-  )
+  return isLoopbackAddress(peerAddress(c))
 }
 
 function sessionMeta(c: Parameters<typeof getConnInfo>[0]) {

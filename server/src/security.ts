@@ -3,6 +3,16 @@ import { isIP } from 'node:net'
 /** Docker Desktop / Compose hostnames that resolve to the host or gateway (not public SSRF). */
 const DOCKER_HOST_NAMES = new Set(['host.docker.internal', 'gateway.docker.internal'])
 
+/** True when the TCP peer address is loopback (not spoofable via X-Forwarded-For). */
+export function isLoopbackAddress(remote: string): boolean {
+  return (
+    remote === '127.0.0.1' ||
+    remote === '::1' ||
+    remote === '::ffff:127.0.0.1' ||
+    remote === 'localhost'
+  )
+}
+
 /** True for loopback or RFC1918 / link-local private hosts. */
 export function isPrivateOrLoopbackHost(hostname: string): boolean {
   const host = hostname.replace(/^\[|\]$/g, '').toLowerCase()

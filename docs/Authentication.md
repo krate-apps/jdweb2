@@ -11,7 +11,7 @@ Login passwords are hashed with **argon2id** and never stored in plain text.
 When the `users` table is empty:
 
 1. **Environment seed** (typical for Docker / unattended install): set `JDWEB_USER` and `JDWEB_PASSWORD` before starting. They are applied once at startup, then ignored for login.
-2. **Localhost setup API**: `POST /api/setup/admin` with `{ "username", "password" }` from **127.0.0.1 / ::1 only**. After at least one user exists, this returns 403. The UI offers `/setup` when `GET /api/setup/status` reports `needsSetup: true`.
+2. **Localhost setup API**: `POST /api/setup/admin` with `{ "username", "password" }` from a **TCP loopback peer only** (`127.0.0.1` / `::1`). `X-Forwarded-For` is ignored for this gate so a published Docker port cannot spoof setup. After at least one user exists, this returns 403. The UI offers `/setup` when `GET /api/setup/status` reports `needsSetup: true`.
 
 Password minimum length: **8** characters.
 
