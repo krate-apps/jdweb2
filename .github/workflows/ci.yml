@@ -5,28 +5,58 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PLAYWRIGHT_VERSION: 1.61.0
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.7.0
-      - uses: actions/setup-node@v4
+
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: pnpm
+
       - run: pnpm install --frozen-lockfile
+
       - run: pnpm typecheck
       - run: pnpm --filter ./server test
       - run: pnpm build
+
       - run: rm -f data/e2e.sqlite data/e2e.sqlite-*
       - run: pnpm test:e2e
         env:
           CI: true
           MOCK_JD_PORT: 13128
-      - run: pnpm dlx @playwright/test@1.61.0 install --with-deps chromium
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}-chromium
+
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm dlx "@playwright/test@${{ env.PLAYWRIGHT_VERSION }}" install --with-deps chromium
+
+      - name: Install Playwright OS deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm dlx "@playwright/test@${{ env.PLAYWRIGHT_VERSION }}" install-deps chromium
+
       - run: pnpm test:e2e:ui
         env:
           CI: true
