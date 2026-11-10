@@ -32,9 +32,7 @@ example.com {
 	handle @jdweb {
 		reverse_proxy 127.0.0.1:8787 {
 			header_up Host {host}
-			header_up X-Real-IP {remote_host}
 			header_up X-Forwarded-Proto {scheme}
-			header_up X-Forwarded-Prefix /alice/jdweb
 		}
 	}
 }
@@ -56,7 +54,6 @@ Then restart jdweb (`pnpm start` or `docker compose up -d`).
 jdweb.example.com {
 	reverse_proxy 127.0.0.1:8787 {
 		header_up Host {host}
-		header_up X-Real-IP {remote_host}
 		header_up X-Forwarded-Proto {scheme}
 	}
 }
@@ -96,10 +93,8 @@ server {
 		proxy_http_version 1.1;
 		proxy_pass http://127.0.0.1:8787;
 		proxy_set_header Host $host;
-		proxy_set_header X-Real-IP $remote_addr;
 		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 		proxy_set_header X-Forwarded-Proto $scheme;
-		proxy_set_header X-Forwarded-Prefix /alice/jdweb;
 		proxy_read_timeout 300s;
 	}
 }
@@ -118,7 +113,6 @@ server {
 		proxy_http_version 1.1;
 		proxy_pass http://127.0.0.1:8787;
 		proxy_set_header Host $host;
-		proxy_set_header X-Real-IP $remote_addr;
 		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 		proxy_set_header X-Forwarded-Proto $scheme;
 	}
@@ -153,7 +147,6 @@ Enable modules: `proxy`, `proxy_http`, `headers`, and usually `ssl`.
 
 	ProxyPreserveHost On
 	RequestHeader set X-Forwarded-Proto "https"
-	RequestHeader set X-Forwarded-Prefix "/alice/jdweb"
 
 	# Keep the /alice/jdweb prefix on the upstream URL
 	ProxyPass        /alice/jdweb http://127.0.0.1:8787/alice/jdweb
@@ -196,7 +189,8 @@ ProxyPass /alice/jdweb/ http://127.0.0.1:8787/
 2. No UI rebuild is required for path prefixes (runtime injection).
 3. Open the app URL and view source: `jdweb-base-path` meta and script/link tags under `/alice/jdweb/assets/…`.
 4. `GET https://…/alice/jdweb/api/health` returns JSON.
-5. Login sets a cookie whose path is `/alice/jdweb` (or `/`).
+5. Login sets a cookie whose path matches Settings `basePath` (e.g. `/alice/jdweb`, or `/`).
+
 
 ## Troubleshooting
 

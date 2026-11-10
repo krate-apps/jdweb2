@@ -9,14 +9,14 @@ Unless noted, endpoints require a valid `jdweb_session` cookie. JSON request bod
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/api/health` | no | Liveness; `jdReachable`, `uiBuilt`, `settingsReady`, mover, setup (no `jdApiUrl`) |
-| `GET` | `/api/setup/status` | no | `{ needsSetup }` when no users exist |
+| `GET` | `/api/setup/status` | no | `{ needsSetup }` boolean |
 | `POST` | `/api/setup/admin` | localhost only | Create first admin `{ username, password }` |
 | `POST` | `/api/setup/probe-jd` | localhost (pre-setup) or auth | Probe URL or scan common local ports |
 | `POST` | `/api/auth/login` | no | `{ username, password }` → sets session cookie (rate-limited) |
 | `GET` | `/api/auth/oidc/status` | no | `{ enabled }` when OIDC env is set |
 | `GET` | `/api/auth/oidc/start` | no | Redirect to IdP (PKCE) |
 | `GET` | `/api/auth/oidc/callback` | no | OAuth callback → session cookie |
-| `POST` | `/api/auth/logout` | cookie | Clears session |
+| `POST` | `/api/auth/logout` | no | Clears session cookie when present |
 | `GET` | `/api/auth/me` | yes | Current username |
 
 ## Sessions

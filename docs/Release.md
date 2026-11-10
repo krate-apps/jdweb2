@@ -39,3 +39,14 @@ JDWEB_BASE_PATH=/alice/jdweb docker compose up -d
 ```bash
 pnpm exec semantic-release --dry-run
 ```
+
+## Wiki sync (maintainers)
+
+English docs live in `docs/` and can be published to the GitHub Wiki:
+
+```bash
+pnpm docs:publish
+# or: ./scripts/publish-docs.sh
+```
+
+Create the first Wiki page once in the GitHub UI so the `*.wiki` remote exists.

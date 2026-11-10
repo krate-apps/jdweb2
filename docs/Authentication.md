@@ -10,10 +10,12 @@ Login passwords are hashed with **argon2id** and never stored in plain text.
 
 When the `users` table is empty:
 
-1. **Environment seed** (typical for Docker / unattended install): set `JDWEB_USER` and `JDWEB_PASSWORD` before starting. They are applied once at startup, then ignored for login.
-2. **Localhost setup API**: `POST /api/setup/admin` with `{ "username", "password" }` from a **TCP loopback peer only** (`127.0.0.1` / `::1`). `X-Forwarded-For` is ignored for this gate so a published Docker port cannot spoof setup. After at least one user exists, this returns 403. The UI offers `/setup` when `GET /api/setup/status` reports `needsSetup: true`.
+1. **Setup wizard** (`/setup`): when `GET /api/setup/status` reports `needsSetup: true`, the UI walks admin → JD URL → library paths.
+2. **Localhost setup API**: `POST /api/setup/admin` with `{ "username", "password" }` from a **TCP loopback peer only** (`127.0.0.1` / `::1`). `X-Forwarded-For` is ignored for this gate so a published Docker port cannot spoof setup. After at least one user exists, this returns `403 setup_already_done`.
+3. **Environment seed** (typical for Docker / unattended install): set `JDWEB_USER` and `JDWEB_PASSWORD` before starting. They are applied once at startup when the users table is empty, then ignored for login.
 
 Password minimum length: **8** characters.
+
 
 ### Sessions
 
@@ -22,7 +24,8 @@ Successful login:
 1. Inserts a row in `sessions` (`id`, `user_id`, `user_agent`, `ip`, timestamps).
 2. Sets an HTTP-only cookie `jdweb_session` with a signed opaque id (`JDWEB_SESSION_SECRET`).
 
-Cookie path follows `JDWEB_BASE_PATH` (or `/`). Flags: **HttpOnly**, **SameSite=Lax**, and **Secure** when the request is HTTPS or `X-Forwarded-Proto: https`. Logout (`POST /api/auth/logout`) deletes the current session and clears the cookie.
+Cookie path follows Settings `basePath` (seeded from `JDWEB_BASE_PATH`, or `/` when empty). Flags: **HttpOnly**, **SameSite=Lax**, and **Secure** when the request is HTTPS or `X-Forwarded-Proto: https`. Logout (`POST /api/auth/logout`) deletes the current session and clears the cookie.
+
 
 CSRF: same-origin SPA + `SameSite=Lax` is enough for cookie-authenticated JSON `PATCH`/`POST`. If cookies were ever sent cross-site, add a CSRF token.
 

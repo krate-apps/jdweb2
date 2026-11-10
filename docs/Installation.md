@@ -1,16 +1,17 @@
 # Installation
 
-## Quick start (3 commands)
+## Quick start
 
 ```bash
 git clone https://github.com/krate-apps/jdweb.git
-cd jdweb && pnpm install
+cd jdweb
+pnpm install
 pnpm build && pnpm start
 ```
 
-Requires Node.js 22+ (26 LTS recommended; matches CI and the Docker image) and pnpm 9 (`corepack enable` is enough on recent Node).
+Needs Node.js and pnpm (see root `package.json` / `packageManager`). `corepack enable` is enough on recent Node to pick up the pinned pnpm.
 
-On first boot without secrets, jdweb writes **`data/secrets.env`** (mode `600`) with `JDWEB_SESSION_SECRET` and `JDWEB_DATA_KEY`. Open the UI on localhost — the **setup wizard** creates the admin, probes JDownloader, and sets staging/library paths (defaults under `~/medias/jdownloader/…`, stored in SQLite).
+On first boot without secrets, jdweb writes **`data/secrets.env`** (mode `600`) with `JDWEB_SESSION_SECRET` and `JDWEB_DATA_KEY`. Open the UI on localhost — the **setup wizard** creates the admin, probes JDownloader, and sets staging/library paths (defaults under `~/medias/jdownloader/…`, stored in SQLite). You can also `POST /api/setup/admin` from loopback — see [Authentication](Authentication).
 
 Optional: `cp .env.example .env` only if you need bind address, base path, or DB path. See [Configuration](Configuration).
 
@@ -22,7 +23,7 @@ cp .env.example .env
 
 Boot-only variables: `JDWEB_HOST`, `JDWEB_PORT`, `JDWEB_BASE_PATH`, `JDWEB_DB_PATH`, secrets (or auto `data/secrets.env`), optional `JDWEB_USER` / `JDWEB_PASSWORD` for unattended admin seed.
 
-JD URL and library paths belong in **Settings** (or the wizard), not in `.env`.
+JD URL and library paths belong in **Settings** (or the wizard), not in `.env` (env can only *seed* them once — see [Configuration](Configuration)).
 
 ## Build and start (production)
 
@@ -69,12 +70,4 @@ Copy together:
 - SQLite: `JDWEB_DB_PATH` (default `./data/jdweb.sqlite`)
 - Secrets: `data/secrets.env` (or your env-provided keys)
 
-## Wiki sync
-
-English docs live in `docs/` and can be published to the GitHub Wiki:
-
-```bash
-./scripts/publish-docs.sh
-```
-
-(Create the first Wiki page once in the GitHub UI so the `*.wiki` remote exists.)
+Or use Settings → Backup / `GET /api/backup` (authenticated).

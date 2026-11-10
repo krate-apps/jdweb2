@@ -46,6 +46,6 @@ Set `JDWEB_WEBHOOK_URLS` to a comma-separated list of URLs. They are inserted **
 | `POST` | `/api/webhooks` | `{ "url", "events"?, "enabled"? }` |
 | `PATCH` | `/api/webhooks/:id` | `{ "url"?, "events"?, "enabled"? }` |
 | `DELETE` | `/api/webhooks/:id` | Remove |
-| `POST` | `/api/webhooks/notify` | `{ "event", "package": { "name", "uuid"?, "saveTo"? }, "error"? }` — dispatch without waiting for delivery |
+| `POST` | `/api/webhooks/notify` | `{ "event", "package": { "name", "uuid"?, "saveTo"? }, "error"? }` — starts delivery in the background and returns immediately |
 
 Event names must be one of: `download.finished`, `mover.succeeded`, `mover.failed`.

@@ -44,11 +44,12 @@ Failures are also written into the package comment with a `jdweb-mover:` prefix 
 
 | Action | How |
 |--------|-----|
-| Run one mover pass | Settings → **Run mover now**, or `POST /api/mover/run` |
+| Run one mover pass | Settings → **Move finished downloads now**, or `POST /api/mover/run` |
 | Recent moves | Settings → Recent moves, or `GET /api/mover/history?limit=50` |
 | Retarget one package (staging dir only) | UI move dialog → `POST /api/mover/move` |
 
-Set `JDWEB_MOVER_INTERVAL_MS=0` to disable the automatic timer. Manual destination changes and **Run mover now** still work.
+Set **Library move interval** to `0` in Settings to disable the automatic timer (`JDWEB_MOVER_INTERVAL_MS` only seeds SQLite on first boot). Manual destination changes and **Move finished downloads now** still work.
+
 
 ### Permissions and disk layout
 

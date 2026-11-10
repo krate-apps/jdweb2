@@ -32,7 +32,7 @@ Browser  --HTTPS-->  reverse proxy  --HTTP-->  jdweb (:8787)
 ## Features
 
 - Sign-in with an HTTP-only session cookie; multi-user SQLite auth (argon2id)
-- First admin via env seed or localhost setup API
+- First admin via setup wizard, localhost setup API, or env seed
 - Download list with filters/sort, cleanup, context menus (rename, comment, stop-after, move, retry extract, …)
 - Link grabber; add URLs or `.dlc` / `.ccf` / `.rsdf` containers with crawler progress
 - Drop container files anywhere in the window; Ctrl+L / Cmd+L opens Add links
@@ -43,15 +43,14 @@ Browser  --HTTPS-->  reverse proxy  --HTTP-->  jdweb (:8787)
 - Optional completion toasts and HTTP webhooks
 - Structured JSON logs and authenticated `GET /api/metrics`
 - English and French UI; dark / light theme (local preference)
-- Docker image + Compose; GitHub Actions typecheck and server tests
+- Docker image + Compose; CI typecheck, unit tests, and e2e
 
 ## Requirements
 
-- Node.js **22+** (26 LTS recommended; matches CI and the Docker image)
-- **pnpm 9** (see `packageManager` in the root `package.json`)
+- Node.js and pnpm (pins in the root `package.json`)
 - A running JDownloader 2 instance with the **local HTTP API** enabled
 - For production behind TLS: a reverse proxy (see [Reverse proxy](Reverse-proxy))
 
 ## License
 
-UNLICENSE — see the repository `LICENSE` file.
+Unlicense — see the repository `LICENSE` file.

@@ -4,11 +4,11 @@ jdweb splits configuration into **boot env** (process + secrets) and **app setti
 
 ## Minimal environment (boot)
 
-Copy `.env.example` to `.env`. Only these are required for a normal install:
+Copy `.env.example` to `.env` when you need to override defaults. A normal install can start with **no** `.env`: secrets are auto-created under `data/secrets.env`.
 
 | Variable | Meaning |
 |----------|---------|
-| `JDWEB_HOST` | Bind address (`127.0.0.1` behind a proxy; `0.0.0.0` if exposing Node) |
+| `JDWEB_HOST` | Bind address (`127.0.0.1` behind a proxy; `0.0.0.0` if exposing Node). Default `127.0.0.1` |
 | `JDWEB_PORT` | Listen port (default `8787`) |
 | `JDWEB_BASE_PATH` | Optional public URL prefix (e.g. `/alice/jdweb`). Synced into Settings on boot when set; no UI rebuild |
 | `JDWEB_DB_PATH` | SQLite file (default `./data/jdweb.sqlite`) |
@@ -24,7 +24,10 @@ Optional:
 | `JDWEB_STRICT_SECRETS=1` | Refuse default/derived secrets (also on when `NODE_ENV=production`) |
 | `JDWEB_WEBHOOK_URLS` | CSV seed if `webhooks` table is empty |
 | `JDWEB_EVENTS_INTERVAL_MS` | Server SSE poll interval (default `2000`) |
-| `JDWEB_OIDC_ISSUER` / `CLIENT_ID` / `CLIENT_SECRET` / `REDIRECT_URI` | Optional OIDC SSO |
+| `JDWEB_OIDC_ISSUER` | OIDC issuer URL |
+| `JDWEB_OIDC_CLIENT_ID` | OIDC client id |
+| `JDWEB_OIDC_CLIENT_SECRET` | OIDC client secret (usually required) |
+| `JDWEB_OIDC_REDIRECT_URI` | Must match the IdP app callback |
 | `JDWEB_OIDC_USERNAME_CLAIM` | Claim mapped to local username (default `preferred_username`) |
 | `JDWEB_OIDC_AUTO_PROVISION` | `true` to create local users on first SSO login (default off) |
 
@@ -50,9 +53,9 @@ Host layout matches other downloaders under `~/medias/<app>/`:
   library/{movies,shows,other}
 ```
 
-Docker Compose still seeds `/data/…` via env (volume `./data`).
+Docker Compose seeds `/data/…` via env (volume `./data`).
 
-Env values for those keys are used **once** to seed SQLite when the table is empty. Afterwards the database is the source of truth.
+Env values for those keys are used **once** to seed SQLite when the table is empty. Afterwards the database is the source of truth — changing `JDWEB_MOVER_INTERVAL_MS` (or path env vars) alone does **not** update a running install; use Settings.
 
 `jdApiUrl` must be `http(s)://` to **loopback or a private** address (SSRF protection).
 

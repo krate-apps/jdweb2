@@ -8,17 +8,19 @@
 
 **Fix:**
 
-1. Set the same prefix as the proxy: Compose `JDWEB_BASE_PATH=/trevor/jdweb` or Settings → Connection, then **restart** jdweb.
+1. Set the same prefix as the proxy: Compose `JDWEB_BASE_PATH=/alice/jdweb` or Settings → Connection, then **restart** jdweb.
 2. No image/UI rebuild — the server injects the prefix into HTML at runtime.
-3. Hard-refresh (Ctrl+Shift+R). View source must show `meta name="jdweb-base-path"` and `/trevor/jdweb/assets/...`.
+3. Hard-refresh (Ctrl+Shift+R). View source must show `meta name="jdweb-base-path"` and `/alice/jdweb/assets/...`.
+
 
 See [Reverse proxy](Reverse-proxy).
 
 ## Login loop or cookie not sticking
 
-- Cookie path must match `JDWEB_BASE_PATH`.
+- Cookie path must match Settings `basePath` / `JDWEB_BASE_PATH` (same value the proxy uses).
 - Proxy must not change the path inconsistently (trailing slash redirects are fine).
 - Mixing `http://` app URL with `https://` proxy without correct `X-Forwarded-Proto` can confuse some setups; prefer terminating TLS on the proxy and keeping Node on HTTP localhost.
+
 
 ## `needs_setup` / cannot log in after reinstall
 
@@ -33,11 +35,12 @@ Env seed (`JDWEB_USER` / `JDWEB_PASSWORD`) only runs when the users table is emp
 
 ## Mover never moves
 
-- `JDWEB_MOVER_INTERVAL_MS` must be > 0 for the timer (manual **Run mover now** still works).
+- Settings **Library move interval** must be > 0 for the timer (manual **Move finished downloads now** still works). Env `JDWEB_MOVER_INTERVAL_MS` only seeds the DB once.
 - Package must be **finished**, with `saveTo` under staging and a mapped library destination.
-- Extraction may still be running.
+- Extraction may still be running (mover waits until archives are gone / status is clear).
 - Destination folder must not already exist.
 - Check package comment for `jdweb-mover:` errors and Settings → Recent moves.
+
 
 ## Webhooks not firing
 

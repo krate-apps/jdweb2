@@ -13,7 +13,7 @@ services:
     environment:
       JDWEB_HOST: 0.0.0.0
       JDWEB_PORT: 8787
-      # Public URL prefix, e.g. /trevor/jdweb — synced into Settings on boot
+      # Public URL prefix, e.g. /alice/jdweb — synced into Settings on boot
       JDWEB_BASE_PATH: ${JDWEB_BASE_PATH:-}
       JDWEB_DB_PATH: /data/jdweb.sqlite
       JDWEB_STAGING_DIR: /data/staging

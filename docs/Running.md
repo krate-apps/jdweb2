@@ -131,7 +131,9 @@ Counters include user/hoster/webhook counts, mover last tick, webhook failures, 
 
 ```bash
 pnpm typecheck
-pnpm --filter ./server test
+pnpm test                 # server unit + web format helpers
+pnpm test:e2e             # API smoke + first-run setup API
+pnpm test:e2e:ui          # Playwright (logged-in smoke + setup wizard)
 ```
 
-CI runs the same on pull requests (`.github/workflows/ci.yml`).
+CI runs typecheck, unit tests, build, and e2e on pull requests (`.github/workflows/ci.yml`).
