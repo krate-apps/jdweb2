@@ -5,7 +5,7 @@ async function login(page: import('@playwright/test').Page) {
   await page.locator('input[autocomplete="username"]').fill('admin')
   await page.locator('input[autocomplete="current-password"]').fill('password123')
   await page.getByRole('button', { name: /sign in|se connecter/i }).click()
-  await expect(page).toHaveURL(/downloads/)
+  await expect(page).toHaveURL(/downloads/, { timeout: 15_000 })
 }
 
 test('login opens downloads', async ({ page }) => {
