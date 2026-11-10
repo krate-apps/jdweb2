@@ -10,7 +10,10 @@ async function login(page: import('@playwright/test').Page) {
 
 test('login opens downloads', async ({ page }) => {
   await login(page)
-  await expect(page.getByText(/nothing|rien/i).first()).toBeVisible({ timeout: 15_000 })
+  // Mobile + desktop both render the empty copy; only one is visible per viewport.
+  await expect(
+    page.locator('p:visible').filter({ hasText: /Nothing here yet|Rien pour le moment/i }),
+  ).toBeVisible({ timeout: 15_000 })
 })
 
 test('settings page loads', async ({ page }) => {
