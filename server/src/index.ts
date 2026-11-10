@@ -127,6 +127,8 @@ function errorStatus(message: string): ContentfulStatusCode {
     case 'invalid_body':
     case 'invalid_jd_api_url':
     case 'jd_api_url_not_private':
+    case 'invalid_url':
+    case 'webhook_url_not_public':
     case 'invalid_mover_interval':
     case 'invalid_path':
     case 'cannot_delete_root':

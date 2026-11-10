@@ -53,3 +53,20 @@ export function assertSafeJdApiUrl(raw: string): string {
   if (!isPrivateOrLoopbackHost(url.hostname)) throw new Error('jd_api_url_not_private')
   return trimmed
 }
+
+/** Outbound webhook targets must be public http(s) — never private/metadata hosts. */
+export function assertSafeWebhookUrl(raw: string): string {
+  const trimmed = raw.trim()
+  let url: URL
+  try {
+    url = new URL(trimmed)
+  } catch {
+    throw new Error('invalid_url')
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('invalid_url')
+  }
+  if (url.username || url.password) throw new Error('invalid_url')
+  if (isPrivateOrLoopbackHost(url.hostname)) throw new Error('webhook_url_not_public')
+  return trimmed
+}

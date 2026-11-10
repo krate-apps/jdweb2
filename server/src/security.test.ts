@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { assertSafeJdApiUrl, isLoopbackAddress, isPrivateOrLoopbackHost } from './security.js'
+import {
+  assertSafeJdApiUrl,
+  assertSafeWebhookUrl,
+  isLoopbackAddress,
+  isPrivateOrLoopbackHost,
+} from './security.js'
 import { rateLimitAllow, clearRateLimits } from './rate-limit.js'
 
 describe('isLoopbackAddress', () => {
@@ -40,6 +45,19 @@ describe('assertSafeJdApiUrl', () => {
     assert.throws(() => assertSafeJdApiUrl('http://example.com:3128'), /jd_api_url_not_private/)
     assert.throws(() => assertSafeJdApiUrl('not-a-url'), /invalid_jd_api_url/)
     assert.throws(() => assertSafeJdApiUrl('ftp://127.0.0.1:3128'), /invalid_jd_api_url/)
+  })
+})
+
+describe('assertSafeWebhookUrl', () => {
+  it('accepts public https URLs', () => {
+    assert.equal(assertSafeWebhookUrl('https://hooks.example.com/x'), 'https://hooks.example.com/x')
+  })
+
+  it('rejects private and metadata hosts', () => {
+    assert.throws(() => assertSafeWebhookUrl('http://127.0.0.1/hook'), /webhook_url_not_public/)
+    assert.throws(() => assertSafeWebhookUrl('http://10.0.0.1/hook'), /webhook_url_not_public/)
+    assert.throws(() => assertSafeWebhookUrl('http://169.254.169.254/latest'), /webhook_url_not_public/)
+    assert.throws(() => assertSafeWebhookUrl('ftp://example.com/x'), /invalid_url/)
   })
 })
 

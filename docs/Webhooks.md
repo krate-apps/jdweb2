@@ -6,7 +6,7 @@ jdweb can POST a small JSON payload to configured HTTP endpoints when packages f
 
 | Event | When |
 |-------|------|
-| `download.finished` | The UI (or notify API) detects a package newly marked finished |
+| `download.finished` | The server poller detects a package newly marked finished |
 | `mover.succeeded` | The mover copied a package into the library |
 | `mover.failed` | The mover failed for a package |
 
@@ -31,6 +31,8 @@ jdweb can POST a small JSON payload to configured HTTP endpoints when packages f
 ### Settings UI
 
 Settings → Notifications → HTTP webhooks: add a URL (all events enabled by default), enable/disable, or remove.
+
+Webhook URLs must be public `http`/`https` hosts. Private, loopback, and link-local targets (including cloud metadata addresses) are rejected to prevent SSRF.
 
 ### Environment seed
 

@@ -1,6 +1,7 @@
 import { config } from './config.js'
 import { getDb } from './db.js'
 import { log } from './log.js'
+import { assertSafeWebhookUrl } from './security.js'
 
 export const WEBHOOK_EVENTS = ['download.finished', 'mover.succeeded', 'mover.failed'] as const
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number]
@@ -71,8 +72,16 @@ export function seedWebhooksFromEnv(): number {
   )
   let seeded = 0
   for (const url of config.webhookUrls) {
-    insert.run(url, events, now, now)
-    seeded += 1
+    try {
+      const safe = assertSafeWebhookUrl(url)
+      insert.run(safe, events, now, now)
+      seeded += 1
+    } catch (err) {
+      log('warn', 'skipping unsafe webhook seed URL', {
+        url,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
   }
   return seeded
 }
@@ -85,8 +94,7 @@ export function listWebhooks(): WebhookRow[] {
 }
 
 export function createWebhook(url: string, events: WebhookEvent[], enabled = true): WebhookRow {
-  const trimmed = url.trim()
-  if (!/^https?:\/\//i.test(trimmed)) throw new Error('invalid_url')
+  const trimmed = assertSafeWebhookUrl(url)
   const selected = events.length ? events : [...WEBHOOK_EVENTS]
   const now = Date.now()
   const result = getDb()
@@ -103,8 +111,7 @@ export function updateWebhook(
 ): WebhookRow | null {
   const existing = getWebhook(id)
   if (!existing) return null
-  const url = patch.url?.trim() ?? existing.url
-  if (!/^https?:\/\//i.test(url)) throw new Error('invalid_url')
+  const url = patch.url !== undefined ? assertSafeWebhookUrl(patch.url) : existing.url
   const events = patch.events ?? existing.events
   const enabled = patch.enabled ?? existing.enabled
   getDb()
