@@ -47,7 +47,7 @@ Browser  --HTTPS-->  reverse proxy  --HTTP-->  jdweb (:8787)
 
 ## Requirements
 
-- Node.js **20+** (22 recommended; matches the Docker image)
+- Node.js **22+** (26 LTS recommended; matches CI and the Docker image)
 - **pnpm 9** (see `packageManager` in the root `package.json`)
 - A running JDownloader 2 instance with the **local HTTP API** enabled
 - For production behind TLS: a reverse proxy (see [Reverse proxy](Reverse-proxy))

@@ -8,7 +8,7 @@ cd jdweb && pnpm install
 pnpm build && pnpm start
 ```
 
-Requires Node.js 20+ and pnpm 9 (`corepack enable` is enough on recent Node).
+Requires Node.js 22+ (26 LTS recommended; matches CI and the Docker image) and pnpm 9 (`corepack enable` is enough on recent Node).
 
 On first boot without secrets, jdweb writes **`data/secrets.env`** (mode `600`) with `JDWEB_SESSION_SECRET` and `JDWEB_DATA_KEY`. Open the UI on localhost — the **setup wizard** creates the admin, probes JDownloader, and sets staging/library paths (defaults under `~/medias/jdownloader/…`, stored in SQLite).
 

@@ -25,7 +25,7 @@ Browser ──HTTPS──▶ reverse proxy ──HTTP──▶ jdweb (:8787)
 
 ## Quick start
 
-**Requirements:** Node.js 20+, pnpm 9, JDownloader with the local HTTP API enabled.
+**Requirements:** Node.js 22+ (26 LTS recommended), pnpm 9, JDownloader with the local HTTP API enabled.
 
 ```bash
 pnpm install && pnpm build && pnpm start
