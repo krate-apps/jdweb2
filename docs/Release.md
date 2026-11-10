@@ -1,6 +1,6 @@
 # Releases
 
-jdweb versions with **semantic-release** on every push to `main` that contains releasable Conventional Commits.
+jdweb versions with **semantic-release** on pushes to **`main` only**, after the CI `check` job succeeds (same workflow: `.github/workflows/ci.yml`). PRs and other branches never release. CI and release never run in parallel on the same ref.
 
 ## Version rules
 
