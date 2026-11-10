@@ -16,7 +16,6 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     const prefix = base && base !== '/' ? base.replace(/\/+$/, '') : ''
     const swUrl = `${prefix}/sw.js`
     void (async () => {
-      // Clear the v1 worker that intercepted JS/CSS and broke path-prefix installs.
       const regs = await navigator.serviceWorker.getRegistrations()
       await Promise.all(regs.map((reg) => reg.unregister().catch(() => undefined)))
       await caches.keys().then((keys) =>

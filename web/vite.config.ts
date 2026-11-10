@@ -23,8 +23,6 @@ export default defineConfig(({ mode }) => {
       renderBuiltUrl(filename, { hostType }) {
         if (mode !== 'production') return undefined
         if (hostType === 'js') {
-          // Read the server-injected meta (CSP-safe). An inline
-          // window.__JDWEB_ASSET_BASE__=… script is blocked by script-src 'self'.
           return {
             runtime: `((document.querySelector('meta[name="jdweb-base-path"]')||{content:""}).content||"")+${JSON.stringify('/' + filename)}`,
           }

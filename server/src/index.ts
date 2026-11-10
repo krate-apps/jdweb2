@@ -818,8 +818,8 @@ function htmlHasBasePath(html: string, basePath: string): boolean {
 }
 
 /**
- * Inject runtime base path via meta (CSP-safe — no inline script) and rewrite
- * root-absolute asset URLs so one root-built `web/dist` works under any prefix.
+ * Inject runtime base path via meta and rewrite root-absolute asset URLs so
+ * one root-built `web/dist` works under any public prefix.
  */
 function rewriteSpaHtml(html: string, basePath: string): string {
   const safeBase = basePath.replace(/"/g, '')
@@ -830,8 +830,6 @@ function rewriteSpaHtml(html: string, basePath: string): string {
         meta,
       )
     : html.replace(/<head([^>]*)>/i, `<head$1>${meta}`)
-  // Drop legacy inline asset-base scripts (blocked by script-src 'self').
-  out = out.replace(/<script>\s*window\.__JDWEB_ASSET_BASE__\s*=\s*["'][^"']*["']\s*;?\s*<\/script>/gi, '')
   if (basePath && !htmlHasBasePath(out, basePath)) {
     out = out.replaceAll('src="/', `src="${basePath}/`).replaceAll('href="/', `href="${basePath}/`)
   }

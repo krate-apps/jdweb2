@@ -123,7 +123,7 @@ export const config = {
   dataKeyDerived: dataKeyResolved.derived,
   /** When set, hoster secrets are re-encrypted from this key to dataKey at boot. */
   dataKeyPrevious: resolvePreviousDataKey(),
-  /** CSV of webhook URLs seeded when the webhooks table is empty (legacy). */
+  /** CSV of webhook URLs seeded when the webhooks table is empty. */
   webhookUrls: env('JDWEB_WEBHOOK_URLS', '')
     .split(',')
     .map((s) => s.trim())

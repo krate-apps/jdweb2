@@ -60,7 +60,7 @@ export function assertSafeBasePath(raw: string): string {
   return normalized
 }
 
-/** Defaults from env (legacy installs) or ~/medias/jdownloader like other downloaders. */
+/** Defaults from env or ~/medias/jdownloader like other downloaders. */
 export function defaultsFromEnv(): AppSettings {
   const media = defaultMediaRoot()
   return {

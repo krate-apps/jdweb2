@@ -22,7 +22,7 @@ Optional:
 | `JDWEB_DATA_KEY_PREVIOUS` | Old key during rotation |
 | `JDWEB_USER` / `JDWEB_PASSWORD` | Seed first admin when `users` is empty |
 | `JDWEB_STRICT_SECRETS=1` | Refuse default/derived secrets (also on when `NODE_ENV=production`) |
-| `JDWEB_WEBHOOK_URLS` | Legacy CSV seed if `webhooks` table is empty |
+| `JDWEB_WEBHOOK_URLS` | CSV seed if `webhooks` table is empty |
 | `JDWEB_EVENTS_INTERVAL_MS` | Server SSE poll interval (default `2000`) |
 | `JDWEB_OIDC_ISSUER` / `CLIENT_ID` / `CLIENT_SECRET` / `REDIRECT_URI` | Optional OIDC SSO |
 | `JDWEB_OIDC_USERNAME_CLAIM` | Claim mapped to local username (default `preferred_username`) |
@@ -52,7 +52,7 @@ Host layout matches other downloaders under `~/medias/<app>/`:
 
 Docker Compose still seeds `/data/…` via env (volume `./data`).
 
-Env values for those keys are used **once** to seed SQLite (and as legacy override when seeding an empty table). Afterwards the database is the source of truth.
+Env values for those keys are used **once** to seed SQLite when the table is empty. Afterwards the database is the source of truth.
 
 `jdApiUrl` must be `http(s)://` to **loopback or a private** address (SSRF protection).
 
