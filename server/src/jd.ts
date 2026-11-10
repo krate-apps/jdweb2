@@ -25,6 +25,7 @@ export async function jdCall<T>(path: string, ...params: unknown[]): Promise<T> 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ params }),
+      signal: AbortSignal.timeout(4000),
     })
   } catch (err) {
     noteJdError()
@@ -50,6 +51,7 @@ export async function proxyJdRequest(path: string, rawBody: string | undefined):
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: rawBody && rawBody.length > 0 ? rawBody : '{"params":[]}',
+      signal: AbortSignal.timeout(4000),
     })
   } catch (err) {
     noteJdError()
