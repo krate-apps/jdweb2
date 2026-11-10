@@ -73,7 +73,7 @@ onMounted(async () => {
         </div>
         <div class="flex justify-between gap-3">
           <dt class="text-muted">{{ t('about.license') }}</dt>
-          <dd>Unlicense</dd>
+          <dd>MIT</dd>
         </div>
       </dl>
 
