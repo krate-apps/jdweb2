@@ -14,7 +14,7 @@ Pushes to **`develop`** run `check`, then publish a rolling Docker image `ghcr.i
 | type with `!` (breaking) | major |
 | `chore`, `docs`, `test`, `ci`, `build`, `style`, `refactor` | no release |
 
-Current published image: `ghcr.io/krate-apps/jdweb2:0.0.0` (<!-- jdweb-version -->0.0.0<!-- /jdweb-version -->).
+Current published image: `ghcr.io/krate-apps/jdweb2:1.0.0` (<!-- jdweb-version -->1.0.0<!-- /jdweb-version -->).
 
 ## What a release does
 

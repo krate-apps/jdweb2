@@ -44,7 +44,7 @@ docker compose up -d
 
 Path prefix without rebuild: `JDWEB_BASE_PATH=/alice/jdweb docker compose up -d`.
 
-<!-- jdweb-version -->0.0.0<!-- /jdweb-version -->
+<!-- jdweb-version -->1.0.0<!-- /jdweb-version -->
 
 ## Documentation
 
