@@ -8,7 +8,7 @@ Unless noted, endpoints require a valid `jdweb_session` cookie. JSON request bod
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/health` | no | Liveness; `jdReachable`, `uiBuilt`, `settingsReady`, mover, setup |
+| `GET` | `/api/health` | no | Liveness; `jdReachable`, `uiBuilt`, `settingsReady`, mover, setup (no `jdApiUrl`) |
 | `GET` | `/api/setup/status` | no | `{ needsSetup }` when no users exist |
 | `POST` | `/api/setup/admin` | localhost only | Create first admin `{ username, password }` |
 | `POST` | `/api/setup/probe-jd` | localhost (pre-setup) or auth | Probe URL or scan common local ports |

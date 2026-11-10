@@ -175,7 +175,6 @@ app.get('/api/health', async (c) => {
     mover: settings.moverIntervalMs > 0,
     needsSetup: countUsers() === 0,
     jdReachable: jd.ok,
-    jdApiUrl: settings.jdApiUrl,
     uiBuilt,
     settingsReady: true,
   })

@@ -52,7 +52,7 @@ cp .env.example .env   # optional; secrets auto-create under the data volume
 docker compose up -d
 ```
 
-Mounting `./data` is enough for DB, secrets file, staging, and library. Path prefix (no rebuild):
+Mounting `./data` is enough for DB, secrets file, staging, and library. The image runs as the non-root `node` user (**UID 1000**); ensure `./data` is writable by that UID (`chown -R 1000:1000 data` on first setup if needed). Path prefix (no rebuild):
 
 ```bash
 JDWEB_BASE_PATH=/alice/jdweb docker compose up -d

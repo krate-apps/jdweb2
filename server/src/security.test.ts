@@ -6,7 +6,7 @@ import {
   isLoopbackAddress,
   isPrivateOrLoopbackHost,
 } from './security.js'
-import { rateLimitAllow, clearRateLimits } from './rate-limit.js'
+import { rateLimitAllow, clearRateLimits, rateLimitSize } from './rate-limit.js'
 
 describe('isLoopbackAddress', () => {
   it('accepts loopback peers only', () => {
@@ -67,5 +67,17 @@ describe('rateLimitAllow', () => {
     assert.equal(rateLimitAllow('t', 2, 60_000), true)
     assert.equal(rateLimitAllow('t', 2, 60_000), true)
     assert.equal(rateLimitAllow('t', 2, 60_000), false)
+  })
+
+  it('purges expired keys', () => {
+    clearRateLimits()
+    assert.equal(rateLimitAllow('expire-me', 1, 1), true)
+    // Wait for the 1ms window to elapse, then a new allow should GC the old key.
+    const start = Date.now()
+    while (Date.now() - start < 5) {
+      /* spin */
+    }
+    assert.equal(rateLimitAllow('other', 1, 60_000), true)
+    assert.equal(rateLimitSize(), 1)
   })
 })

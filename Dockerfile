@@ -22,5 +22,7 @@ COPY server/package.json server/
 RUN pnpm install --frozen-lockfile --filter ./server --prod
 COPY --from=build /app/server/dist server/dist
 COPY --from=build /app/web/dist web/dist
+RUN chown -R node:node /app
+USER node
 EXPOSE 8787
 CMD ["node", "server/dist/index.js"]
