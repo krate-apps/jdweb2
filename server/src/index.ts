@@ -597,6 +597,8 @@ app.post('/api/backup/restore', requireAuth, async (c) => {
     const buf = Buffer.from(await file.arrayBuffer())
     await restoreBackupBytes(buf)
     recordAudit('backup.restore', null, c.get('username'))
+    // Process must exit so Compose/systemd reopen SQLite on the restored file.
+    setTimeout(() => process.exit(0), 250)
     return c.json({ ok: true, restartRequired: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'restore_failed'

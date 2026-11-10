@@ -1,7 +1,7 @@
 import { copyFile, mkdir, rename, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { config } from './config.js'
-import { getDb } from './db.js'
+import { closeDb, getDb } from './db.js'
 import { log } from './log.js'
 
 /** Checkpoint WAL and copy the sqlite file to a temp path; returns absolute path. */
@@ -35,6 +35,8 @@ export async function restoreBackupBytes(bytes: Buffer): Promise<void> {
   } catch {
     /* first install */
   }
+  // Release the open handle before replacing the file on disk.
+  closeDb()
   await rename(staging, config.dbPath)
   // Drop sidecar WAL/SHM so the restored file is authoritative after restart.
   for (const side of [`${config.dbPath}-wal`, `${config.dbPath}-shm`]) {
