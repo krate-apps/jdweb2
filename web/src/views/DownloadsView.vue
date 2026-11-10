@@ -188,7 +188,7 @@ async function onMenuSelect(action: string) {
 </script>
 
 <template>
-  <div class="p-3 sm:p-4 space-y-3 overflow-x-auto" @click="hideMenu">
+  <div class="p-3 sm:p-4 space-y-3" @click="hideMenu">
     <div class="jd-panel rounded-[16px] px-3 py-2 flex flex-nowrap items-center gap-3 text-sm overflow-x-auto">
       <label class="inline-flex items-center gap-2 shrink-0 min-w-0 flex-1 max-w-xs">
         <span class="text-xs font-medium text-muted shrink-0">{{ t('downloads.search') }}</span>
@@ -219,16 +219,108 @@ async function onMenuSelect(action: string) {
       <span class="jd-chip ml-auto shrink-0 text-muted tabular-nums">{{ visiblePackages.length }}</span>
     </div>
 
-    <div class="jd-panel rounded-[16px] overflow-hidden min-w-[720px]">
+    <!-- Mobile card stack -->
+    <div class="md:hidden space-y-2">
+      <article
+        v-for="pkg in visiblePackages"
+        :key="pkg.uuid"
+        class="jd-panel rounded-[16px] p-3 space-y-2"
+        @contextmenu.prevent="showMenu($event, 'package', pkg.uuid)"
+        @touchstart.passive="onLongPressStart($event, 'package', pkg.uuid)"
+        @touchend="onLongPressEnd"
+        @touchmove="onLongPressEnd"
+        @touchcancel="onLongPressEnd"
+      >
+        <div class="flex items-start gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center size-7 rounded-[8px] text-muted hover:bg-surface-3 hover:text-foreground shrink-0 mt-0.5"
+            @click="toggleExpand(pkg.uuid)"
+          >
+            <ChevronDown v-if="expanded.has(pkg.uuid)" class="size-3.5" aria-hidden="true" />
+            <ChevronRight v-else class="size-3.5" aria-hidden="true" />
+          </button>
+          <div class="min-w-0 flex-1 space-y-1.5">
+            <p class="font-medium text-sm truncate" :title="pkg.name">{{ pkg.name }}</p>
+            <div class="flex flex-wrap gap-1 items-center">
+              <span class="jd-chip" :class="statusClass(pkg.status, pkg.finished)">{{ pkg.status || '—' }}</span>
+              <span
+                v-if="pkg.extraction && pkg.extraction !== 'none'"
+                class="jd-chip"
+                :class="{
+                  'text-state-down': pkg.extraction === 'extracting',
+                  'text-state-seed': pkg.extraction === 'ok',
+                  'text-state-error': pkg.extraction === 'failed' || pkg.extraction === 'needPassword',
+                }"
+              >
+                {{
+                  pkg.extraction === 'extracting'
+                    ? t('extraction.extracting')
+                    : pkg.extraction === 'ok'
+                      ? t('extraction.ok')
+                      : pkg.extraction === 'needPassword'
+                        ? t('extraction.needPassword')
+                        : t('extraction.failed')
+                }}
+              </span>
+            </div>
+            <div class="h-2 rounded-full bg-surface-3 overflow-hidden">
+              <div
+                class="h-full progress-fill rounded-full"
+                :style="{ width: `${progress(pkg.bytesLoaded, pkg.bytesTotal)}%` }"
+              />
+            </div>
+            <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted tabular-nums">
+              <span>{{ formatSize(pkg.bytesTotal) }}</span>
+              <span>{{ formatSpeed(pkg.speed) }}</span>
+              <span>{{ formatEta(pkg.eta) }}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="jd-btn jd-btn-ghost !px-2 !py-1 text-xs text-accent-text shrink-0"
+            @click="moveTarget = { uuid: pkg.uuid, saveTo: pkg.saveTo }"
+          >
+            <FolderInput class="size-3.5" aria-hidden="true" />
+            {{ t('downloads.move') }}
+          </button>
+        </div>
+        <ul v-if="expanded.has(pkg.uuid)" class="space-y-1.5 pl-9">
+          <li
+            v-for="link in downloads.linksForPackage(pkg.uuid)"
+            :key="link.uuid"
+            class="flex items-center gap-2 text-xs"
+            @contextmenu.prevent="showMenu($event, 'link', link.uuid)"
+          >
+            <input
+              type="checkbox"
+              class="accent-[var(--jd-primary)] shrink-0"
+              :checked="downloads.selected.has(link.uuid)"
+              @change="downloads.toggleSelect(link.uuid)"
+            />
+            <span class="truncate flex-1 min-w-0" :title="link.name">{{ link.name }}</span>
+            <span class="text-muted shrink-0" :class="statusClass(link.status, link.finished, link.running)">
+              {{ link.status || '—' }}
+            </span>
+          </li>
+        </ul>
+      </article>
+      <p v-if="!visiblePackages.length" class="text-sm text-muted p-8 text-center jd-panel rounded-[16px]">
+        {{ downloads.packages.length ? t('downloads.searchEmpty') : t('common.empty') }}
+      </p>
+    </div>
+
+    <!-- Desktop table -->
+    <div class="hidden md:block jd-panel rounded-[16px] overflow-hidden">
       <table class="w-full text-sm border-collapse">
         <thead>
           <tr class="text-left text-[11px] uppercase tracking-wide text-muted bg-surface-2/50 border-b border-border">
             <th class="w-9 py-2.5 pl-2" />
             <th class="py-2.5 pr-2 font-medium">{{ t('downloads.name') }}</th>
-            <th class="py-2.5 px-2 text-right font-medium hidden md:table-cell">{{ t('downloads.size') }}</th>
-            <th class="py-2.5 px-2 font-medium hidden md:table-cell">{{ t('downloads.hoster') }}</th>
+            <th class="py-2.5 px-2 text-right font-medium">{{ t('downloads.size') }}</th>
+            <th class="py-2.5 px-2 font-medium">{{ t('downloads.hoster') }}</th>
             <th class="py-2.5 px-2 font-medium">{{ t('downloads.status') }}</th>
-            <th class="py-2.5 px-2 text-right font-medium hidden md:table-cell">{{ t('downloads.speed') }}</th>
+            <th class="py-2.5 px-2 text-right font-medium">{{ t('downloads.speed') }}</th>
             <th class="py-2.5 px-2 text-right font-medium hidden lg:table-cell">{{ t('downloads.eta') }}</th>
             <th class="py-2.5 px-2 font-medium min-w-[110px]">{{ t('downloads.progress') }}</th>
             <th class="py-2.5 px-2 font-medium hidden lg:table-cell">{{ t('downloads.comment') }}</th>
@@ -256,8 +348,8 @@ async function onMenuSelect(action: string) {
                 </button>
               </td>
               <td class="py-2.5 font-medium truncate max-w-[280px]" :title="pkg.name">{{ pkg.name }}</td>
-              <td class="py-2.5 px-2 text-right tabular-nums text-muted hidden md:table-cell">{{ formatSize(pkg.bytesTotal) }}</td>
-              <td class="py-2.5 px-2 text-muted hidden md:table-cell truncate max-w-[120px]">
+              <td class="py-2.5 px-2 text-right tabular-nums text-muted">{{ formatSize(pkg.bytesTotal) }}</td>
+              <td class="py-2.5 px-2 text-muted truncate max-w-[120px]">
                 {{ (pkg.hosts ?? []).join(', ') || '—' }}
               </td>
               <td class="py-2.5 px-2">
@@ -284,7 +376,7 @@ async function onMenuSelect(action: string) {
                   </span>
                 </div>
               </td>
-              <td class="py-2.5 px-2 text-right tabular-nums hidden md:table-cell">{{ formatSpeed(pkg.speed) }}</td>
+              <td class="py-2.5 px-2 text-right tabular-nums">{{ formatSpeed(pkg.speed) }}</td>
               <td class="py-2.5 px-2 text-right tabular-nums hidden lg:table-cell">{{ formatEta(pkg.eta) }}</td>
               <td class="py-2.5 px-2">
                 <div class="h-2 rounded-full bg-surface-3 overflow-hidden">
@@ -323,12 +415,12 @@ async function onMenuSelect(action: string) {
                 />
               </td>
               <td class="py-1.5 pl-4 truncate max-w-[280px]" :title="link.name">{{ link.name }}</td>
-              <td class="py-1.5 px-2 text-right hidden md:table-cell">{{ formatSize(link.bytesTotal) }}</td>
-              <td class="py-1.5 px-2 hidden md:table-cell">{{ link.host || '—' }}</td>
+              <td class="py-1.5 px-2 text-right">{{ formatSize(link.bytesTotal) }}</td>
+              <td class="py-1.5 px-2">{{ link.host || '—' }}</td>
               <td class="py-1.5 px-2" :class="statusClass(link.status, link.finished, link.running)">
                 {{ link.status || '—' }}
               </td>
-              <td class="py-1.5 px-2 text-right hidden md:table-cell">{{ formatSpeed(link.speed) }}</td>
+              <td class="py-1.5 px-2 text-right">{{ formatSpeed(link.speed) }}</td>
               <td class="py-1.5 px-2 text-right hidden lg:table-cell">{{ formatEta(link.eta) }}</td>
               <td class="py-1.5 px-2">
                 <div class="h-1.5 rounded-full bg-surface-3 overflow-hidden">
