@@ -10,11 +10,29 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_DEV_PROXY_TARGET || 'http://127.0.0.1:8787'
 
   return {
-    base,
+    // Prod builds use `/` + runtime asset base injected by the server so one
+    // image works under any JDWEB_BASE_PATH. Dev keeps the env prefix for HMR.
+    base: mode === 'production' ? '/' : base,
     plugins: [vue(), tailwindcss()],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    },
+    experimental: {
+      renderBuiltUrl(filename, { hostType }) {
+        if (mode !== 'production') return undefined
+        if (hostType === 'js') {
+          return {
+            runtime: `window.__JDWEB_ASSET_BASE__+${JSON.stringify('/' + filename)}`,
+          }
+        }
+        // Fonts and other CSS urls must be relative so they resolve under any prefix.
+        if (hostType === 'css') {
+          return { relative: true }
+        }
+        // HTML keeps root-absolute paths; the server rewrites index.html href/src.
+        return '/' + filename
       },
     },
     server: {

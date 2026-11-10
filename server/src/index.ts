@@ -820,13 +820,23 @@ function htmlHasBasePath(html: string, basePath: string): boolean {
  * URLs so a single root-built `web/dist` works behind any public prefix.
  */
 function rewriteSpaHtml(html: string, basePath: string): string {
-  const meta = `<meta name="jdweb-base-path" content="${basePath.replace(/"/g, '')}">`
+  const safeBase = basePath.replace(/"/g, '')
+  const meta = `<meta name="jdweb-base-path" content="${safeBase}">`
+  const assetBase = `<script>window.__JDWEB_ASSET_BASE__=${JSON.stringify(safeBase)};</script>`
   let out = /name=["']jdweb-base-path["']/.test(html)
     ? html.replace(
         /<meta\s+name=["']jdweb-base-path["']\s+content=["'][^"']*["']\s*\/?>/i,
         meta,
       )
     : html.replace(/<head([^>]*)>/i, `<head$1>${meta}`)
+  if (!/__JDWEB_ASSET_BASE__/.test(out)) {
+    out = out.replace(/<head([^>]*)>/i, `<head$1>${assetBase}`)
+  } else {
+    out = out.replace(
+      /window\.__JDWEB_ASSET_BASE__\s*=\s*["'][^"']*["']\s*;?/,
+      `window.__JDWEB_ASSET_BASE__=${JSON.stringify(safeBase)};`,
+    )
+  }
   if (basePath && !htmlHasBasePath(out, basePath)) {
     out = out.replaceAll('src="/', `src="${basePath}/`).replaceAll('href="/', `href="${basePath}/`)
   }
@@ -886,9 +896,13 @@ async function main() {
         try {
           const body = await readFile(file)
           const mime = getMimeType(file) || 'application/octet-stream'
+          // Hashed Vite assets are immutable; SW/manifest must revalidate so clients pick up fixes.
+          const noLongCache = /^(sw\.js|manifest\.webmanifest)$/i.test(rel)
           return c.body(body, 200, {
             'Content-Type': mime,
-            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Cache-Control': noLongCache
+              ? 'no-cache'
+              : 'public, max-age=31536000, immutable',
           })
         } catch {
           log('warn', 'asset missing', { rel, file, webDist: staticRoot })

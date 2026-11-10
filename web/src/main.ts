@@ -13,7 +13,16 @@ createApp(App).use(createPinia()).use(router).use(i18n).mount('#app')
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     const base = document.querySelector('meta[name="jdweb-base-path"]')?.getAttribute('content') ?? ''
-    const swUrl = `${base || ''}/sw.js`.replace(/\/{2,}/g, '/').replace(':/', '://')
-    void navigator.serviceWorker.register(swUrl).catch(() => undefined)
+    const prefix = base && base !== '/' ? base.replace(/\/+$/, '') : ''
+    const swUrl = `${prefix}/sw.js`
+    void (async () => {
+      // Clear the v1 worker that intercepted JS/CSS and broke path-prefix installs.
+      const regs = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(regs.map((reg) => reg.unregister().catch(() => undefined)))
+      await caches.keys().then((keys) =>
+        Promise.all(keys.filter((k) => k.startsWith('jdweb-shell')).map((k) => caches.delete(k))),
+      )
+      await navigator.serviceWorker.register(swUrl).catch(() => undefined)
+    })()
   })
 }
