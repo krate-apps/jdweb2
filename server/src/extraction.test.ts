@@ -7,11 +7,16 @@ describe('extractionStateFromStatus', () => {
     assert.equal(extractionStateFromStatus(undefined), 'none')
     assert.equal(extractionStateFromStatus('Extracting…', false), 'extracting')
     assert.equal(extractionStateFromStatus('Extracting…', true), 'ok')
+    assert.equal(extractionStateFromStatus('Unpacking archive', false), 'extracting')
     assert.equal(extractionStateFromStatus('Wrong password'), 'needPassword')
+    assert.equal(extractionStateFromStatus('CRC error in archive'), 'needPassword')
     assert.equal(extractionStateFromStatus('Extract failed'), 'failed')
+    assert.equal(extractionStateFromStatus('Unpack error: disk full'), 'failed')
+    assert.equal(extractionStateFromStatus('Archive extraction failed'), 'failed')
     assert.equal(extractionStateFromStatus('Finished'), 'none')
   })
 })
+
 
 describe('extractionBlocksMover', () => {
   it('blocks unsafe states only', () => {

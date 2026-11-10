@@ -11,6 +11,7 @@
     "start": "pnpm --filter ./server start",
     "rebuild": "pnpm build && pnpm --filter ./server start",
     "typecheck": "pnpm --filter ./web typecheck && pnpm --filter ./server typecheck",
+    "test": "pnpm --filter ./server test && pnpm --filter ./web test",
     "test:e2e": "node e2e/api-smoke.mjs",
     "test:e2e:ui": "pnpm dlx @playwright/test@1.61.0 test",
     "docs:publish": "./scripts/publish-docs.sh",

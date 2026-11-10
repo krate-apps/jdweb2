@@ -16,7 +16,10 @@ const {
   changeOwnPassword,
   countUsers,
   createUser,
+  deleteUser,
+  listUsers,
   seedAdminFromEnv,
+  updateUserPassword,
   verifyLogin,
 } = await import('./users.js')
 
@@ -57,4 +60,27 @@ describe('users', () => {
       /invalid_credentials/,
     )
   })
+
+  it('lists users and updates passwords by id', async () => {
+    const users = listUsers()
+    assert.ok(users.some((u) => u.username === 'alice'))
+    const alice = users.find((u) => u.username === 'alice')!
+    await updateUserPassword(alice.id, 'password-by-id')
+    assert.ok(await verifyLogin('alice', 'password-by-id'))
+    await assert.rejects(() => updateUserPassword(99999, 'password-long'), /user_not_found/)
+  })
+
+  it('refuses deleting the last user and removes extras', async () => {
+    const bob = await createUser('bob', 'password-long')
+    assert.ok(countUsers() >= 3)
+    deleteUser(bob.id)
+    assert.equal(listUsers().some((u) => u.username === 'bob'), false)
+    while (countUsers() > 1) {
+      const victim = listUsers().find((u) => u.username !== 'seedadmin') ?? listUsers()[0]!
+      deleteUser(victim.id)
+    }
+    assert.equal(countUsers(), 1)
+    assert.throws(() => deleteUser(listUsers()[0]!.id), /cannot_delete_last_user/)
+  })
 })
+
