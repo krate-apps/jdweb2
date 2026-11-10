@@ -2,19 +2,19 @@
 
 jdweb versions with **semantic-release** on pushes to **`main` only**, after the CI `check` job succeeds (same workflow: `.github/workflows/ci.yml`). PRs and other branches never release. CI and release never run in parallel on the same ref.
 
-Pushes to **`develop`** run `check`, then publish a rolling Docker image `ghcr.io/krate-apps/jdweb2:develop` (plus `develop-<sha>`). No semver release on `develop`.
+Pushes to **`develop`** run `check`, then publish a rolling Docker image `ghcr.io/krate-apps/jdweb:develop` (plus `develop-<sha>`). No semver release on `develop`.
 
 ## Version rules
 
-| Commit type | Bump |
-|-------------|------|
-| `feat` | minor |
-| `fix`, `perf` | patch |
-| `ux`, `i18n` | minor |
-| type with `!` (breaking) | major |
+| Commit type                                                 | Bump       |
+| ----------------------------------------------------------- | ---------- |
+| `feat`                                                      | minor      |
+| `fix`, `perf`                                               | patch      |
+| `ux`, `i18n`                                                | minor      |
+| type with `!` (breaking)                                    | major      |
 | `chore`, `docs`, `test`, `ci`, `build`, `style`, `refactor` | no release |
 
-Current published image: `ghcr.io/krate-apps/jdweb2:1.0.0` (<!-- jdweb-version -->1.0.0<!-- /jdweb-version -->).
+Current published image: `ghcr.io/krate-apps/jdweb:1.2.2` (<!-- jdweb-version -->1.2.2<!-- /jdweb-version -->).
 
 ## What a release does
 
@@ -22,23 +22,23 @@ Current published image: `ghcr.io/krate-apps/jdweb2:1.0.0` (<!-- jdweb-version -
 2. Updates `CHANGELOG.md`
 3. Updates the GHCR tag in `docker-compose.yml` and docs
 4. Creates git tag `vX.Y.Z` and a GitHub Release
-5. Builds and pushes `ghcr.io/krate-apps/jdweb2:X.Y.Z` and `:latest`
+5. Builds and pushes `ghcr.io/krate-apps/jdweb:X.Y.Z` and `:latest`
 
-| Branch | Image tags |
-|--------|------------|
-| `main` (after a release) | `:X.Y.Z`, `:latest` |
+| Branch                     | Image tags                        |
+| -------------------------- | --------------------------------- |
+| `main` (after a release)   | `:X.Y.Z`, `:latest`               |
 | `develop` (after green CI) | `:develop`, `:develop-<full-sha>` |
 
 ## Baseline
 
-This repository starts with **no tags**. The first releasable Conventional Commit on `main` publishes **`v1.0.0`** (GHCR: `ghcr.io/krate-apps/jdweb2`). Images are on GitHub Container Registry, not Docker Hub.
+The first tag in history is **`v0.1.0`**. Without it, semantic-release would start at `1.0.0`. Do not delete that tag.
 
 ## Path prefix
 
 The image is base-path agnostic. Set the prefix at runtime:
 
 ```bash
-JDWEB_BASE_PATH=/alice/jdweb docker compose up -d
+JDWEB2_BASE_PATH=/jdweb docker compose up -d
 ```
 
 ## Manual dry-run

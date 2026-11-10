@@ -7,17 +7,17 @@ function env(name: string): string {
 }
 
 export function oidcEnabled(): boolean {
-  return Boolean(env('JDWEB_OIDC_ISSUER') && env('JDWEB_OIDC_CLIENT_ID') && env('JDWEB_OIDC_REDIRECT_URI'))
+  return Boolean(env('JDWEB2_OIDC_ISSUER') && env('JDWEB2_OIDC_CLIENT_ID') && env('JDWEB2_OIDC_REDIRECT_URI'))
 }
 
 export function oidcConfig() {
   return {
-    issuer: env('JDWEB_OIDC_ISSUER').replace(/\/+$/, ''),
-    clientId: env('JDWEB_OIDC_CLIENT_ID'),
-    clientSecret: env('JDWEB_OIDC_CLIENT_SECRET'),
-    redirectUri: env('JDWEB_OIDC_REDIRECT_URI'),
-    autoProvision: env('JDWEB_OIDC_AUTO_PROVISION') === '1' || env('JDWEB_OIDC_AUTO_PROVISION') === 'true',
-    usernameClaim: env('JDWEB_OIDC_USERNAME_CLAIM') || 'preferred_username',
+    issuer: env('JDWEB2_OIDC_ISSUER').replace(/\/+$/, ''),
+    clientId: env('JDWEB2_OIDC_CLIENT_ID'),
+    clientSecret: env('JDWEB2_OIDC_CLIENT_SECRET'),
+    redirectUri: env('JDWEB2_OIDC_REDIRECT_URI'),
+    autoProvision: env('JDWEB2_OIDC_AUTO_PROVISION') === '1' || env('JDWEB2_OIDC_AUTO_PROVISION') === 'true',
+    usernameClaim: env('JDWEB2_OIDC_USERNAME_CLAIM') || 'preferred_username',
   }
 }
 

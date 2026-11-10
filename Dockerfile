@@ -12,8 +12,8 @@ COPY server/package.json server/
 RUN pnpm install --frozen-lockfile
 COPY web web
 COPY server server
-ARG JDWEB_BASE_PATH=
-ENV JDWEB_BASE_PATH=$JDWEB_BASE_PATH
+ARG JDWEB2_BASE_PATH=
+ENV JDWEB2_BASE_PATH=$JDWEB2_BASE_PATH
 RUN pnpm build
 
 FROM node:26-bookworm-slim AS runtime

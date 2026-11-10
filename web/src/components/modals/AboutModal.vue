@@ -73,7 +73,7 @@ onMounted(async () => {
         </div>
         <div class="flex justify-between gap-3">
           <dt class="text-muted">{{ t('about.license') }}</dt>
-          <dd>Unlicense</dd>
+          <dd>MIT</dd>
         </div>
       </dl>
 
@@ -81,7 +81,7 @@ onMounted(async () => {
 
       <div class="flex flex-wrap gap-2 pt-2 border-t border-border">
         <a
-          href="https://github.com/krate-apps/jdweb2"
+          href="https://github.com/krate-apps/jdweb"
           target="_blank"
           rel="noopener noreferrer"
           class="jd-btn jd-btn-ghost text-sm"

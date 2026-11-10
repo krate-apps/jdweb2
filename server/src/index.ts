@@ -812,7 +812,7 @@ async function hasWebDist(): Promise<boolean> {
 const STATIC_ASSET_EXT =
   /\.(js|mjs|css|map|ico|png|jpe?g|gif|svg|webp|woff2?|ttf|eot|webmanifest)$/i
 
-/** True when the built index.html already embeds JDWEB_BASE_PATH in asset URLs. */
+/** True when the built index.html already embeds JDWEB2_BASE_PATH in asset URLs. */
 function htmlHasBasePath(html: string, basePath: string): boolean {
   return html.includes(`${basePath}/assets/`)
 }
@@ -826,9 +826,9 @@ function rewriteSpaHtml(html: string, basePath: string): string {
   const meta = `<meta name="jdweb-base-path" content="${safeBase}">`
   let out = /name=["']jdweb-base-path["']/.test(html)
     ? html.replace(
-        /<meta\s+name=["']jdweb-base-path["']\s+content=["'][^"']*["']\s*\/?>/i,
-        meta,
-      )
+      /<meta\s+name=["']jdweb-base-path["']\s+content=["'][^"']*["']\s*\/?>/i,
+      meta,
+    )
     : html.replace(/<head([^>]*)>/i, `<head$1>${meta}`)
   if (basePath && !htmlHasBasePath(out, basePath)) {
     out = out.replaceAll('src="/', `src="${basePath}/`).replaceAll('href="/', `href="${basePath}/`)
@@ -924,7 +924,7 @@ async function main() {
     users: countUsers(),
   })
   if (countUsers() === 0) {
-    log('info', 'no users yet; seed via JDWEB_USER/JDWEB_PASSWORD or POST /api/setup/admin from localhost')
+    log('info', 'no users yet; seed via JDWEB2_USER/JDWEB2_PASSWORD or POST /api/setup/admin from localhost')
   }
   if (!uiBuilt) {
     log('info', 'web dist missing; use Vite at http://127.0.0.1:5173 during development')

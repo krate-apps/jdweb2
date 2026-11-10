@@ -1,6 +1,6 @@
-# jdweb
+# jdweb2
 
-jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org/). It serves a Vue UI and a small authenticated HTTP API that talks to JDownloader’s **local** HTTP API on the same machine (or network). The browser never calls JDownloader directly.
+jdweb2 is a self-hosted web companion for [JDownloader 2](https://jdownloader.org/). It serves a Vue UI and a small authenticated HTTP API that talks to JDownloader’s **local** HTTP API on the same machine (or network). The browser never calls JDownloader directly. Behind a reverse proxy, the recommended public path is `/jdweb`.
 
 ## Contents
 
@@ -18,13 +18,13 @@ jdweb is a self-hosted web companion for [JDownloader 2](https://jdownloader.org
 ## Architecture
 
 ```text
-Browser  --HTTPS-->  reverse proxy  --HTTP-->  jdweb (:8787)
+Browser  --HTTPS-->  reverse proxy (/jdweb)  --HTTP-->  jdweb2 (:8787)
                                               |-- SQLite (users, sessions, hosters, moves, webhooks)
                                               |-- AES hoster secrets
                                               '-- HTTP --> JDownloader local API (Settings)
 ```
 
-- **Auth** is owned by jdweb (argon2id users + server-side sessions), not by JDownloader.
+- **Auth** is owned by jdweb2 (argon2id users + server-side sessions), not by JDownloader.
 - **Hoster accounts** are stored encrypted in SQLite and synced into JDownloader.
 - **Downloads / grabber / engine** go through `/api/jd/*` (authenticated proxy).
 - **Library mover** is a server-side job that copies finished staging folders into configured library roots.
@@ -53,4 +53,4 @@ Browser  --HTTPS-->  reverse proxy  --HTTP-->  jdweb (:8787)
 
 ## License
 
-Unlicense — see the repository `LICENSE` file.
+MIT — see the repository `LICENSE` file.

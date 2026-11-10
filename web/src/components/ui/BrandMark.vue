@@ -20,6 +20,6 @@ withDefaults(
       class="shrink-0 rounded-[6px]"
       decoding="async"
     />
-    <span v-if="showName" class="font-semibold text-accent-text truncate">jdweb</span>
+    <span v-if="showName" class="font-semibold text-accent-text truncate">jdweb2</span>
   </span>
 </template>

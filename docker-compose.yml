@@ -1,25 +1,25 @@
 services:
   jdweb:
-    # Published image works with any JDWEB_BASE_PATH at runtime (no rebuild).
-    image: ghcr.io/krate-apps/jdweb2:1.0.0
+    # Published image works with any JDWEB2_BASE_PATH at runtime (no rebuild).
+    image: ghcr.io/krate-apps/jdweb:1.2.2
     # Optional local build (also no base-path rebuild required):
     build:
       context: .
     ports:
-      - "${JDWEB_PORT:-8787}:8787"
+      - "${JDWEB2_PORT:-8787}:8787"
     env_file:
       - path: .env
         required: false
     environment:
-      JDWEB_HOST: 0.0.0.0
-      JDWEB_PORT: 8787
-      # Public URL prefix, e.g. /alice/jdweb — synced into Settings on boot
-      JDWEB_BASE_PATH: ${JDWEB_BASE_PATH:-}
-      JDWEB_DB_PATH: /data/jdweb.sqlite
-      JDWEB_STAGING_DIR: /data/staging
-      JDWEB_MOVIES_DIR: /data/library/movies
-      JDWEB_SHOWS_DIR: /data/library/shows
-      JDWEB_OTHER_DIR: /data/library/other
+      JDWEB2_HOST: 0.0.0.0
+      JDWEB2_PORT: 8787
+      # Public URL prefix — recommended /jdweb (synced into Settings on boot)
+      JDWEB2_BASE_PATH: ${JDWEB2_BASE_PATH:-}
+      JDWEB2_DB_PATH: /data/jdweb.sqlite
+      JDWEB2_STAGING_DIR: /data/staging
+      JDWEB2_MOVIES_DIR: /data/library/movies
+      JDWEB2_SHOWS_DIR: /data/library/shows
+      JDWEB2_OTHER_DIR: /data/library/other
     volumes:
       # Writable by container user node (UID 1000): chown -R 1000:1000 ./data
       - ./data:/data
@@ -27,10 +27,10 @@ services:
     healthcheck:
       test:
         [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:8787'+(process.env.JDWEB_BASE_PATH||'')+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787'+(process.env.JDWEB2_BASE_PATH||'')+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 30s
       timeout: 5s

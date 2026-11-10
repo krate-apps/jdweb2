@@ -138,8 +138,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/krate-apps/jdweb2:${{ needs.release.outputs.version }}
-            ghcr.io/krate-apps/jdweb2:latest
+            ghcr.io/krate-apps/jdweb:${{ needs.release.outputs.version }}
+            ghcr.io/krate-apps/jdweb:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -167,7 +167,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/krate-apps/jdweb2:develop
-            ghcr.io/krate-apps/jdweb2:develop-${{ github.sha }}
+            ghcr.io/krate-apps/jdweb:develop
+            ghcr.io/krate-apps/jdweb:develop-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

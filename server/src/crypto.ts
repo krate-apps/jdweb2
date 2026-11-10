@@ -61,7 +61,7 @@ export function decryptSecret(parts: EncryptedSecret): string {
   return decryptWithKey(parts, config.dataKey)
 }
 
-/** Re-encrypt every hoster secret from JDWEB_DATA_KEY_PREVIOUS to JDWEB_DATA_KEY. */
+/** Re-encrypt every hoster secret from JDWEB2_DATA_KEY_PREVIOUS to JDWEB2_DATA_KEY. */
 export function rotateHosterSecrets(): number {
   const previous = config.dataKeyPrevious
   if (!previous) return 0
@@ -73,11 +73,11 @@ export function rotateHosterSecrets(): number {
        WHERE password_ciphertext IS NOT NULL AND password_iv IS NOT NULL AND password_tag IS NOT NULL`,
     )
     .all() as unknown as {
-    id: number
-    password_ciphertext: Buffer
-    password_iv: Buffer
-    password_tag: Buffer
-  }[]
+      id: number
+      password_ciphertext: Buffer
+      password_iv: Buffer
+      password_tag: Buffer
+    }[]
   const update = db.prepare(
     `UPDATE hoster_accounts
      SET password_ciphertext = ?, password_iv = ?, password_tag = ?, updated_at = ?

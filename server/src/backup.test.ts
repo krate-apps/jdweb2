@@ -6,9 +6,9 @@ import { join } from 'node:path'
 import { after, before, describe, it } from 'node:test'
 
 const root = mkdtempSync(join(tmpdir(), 'jdweb-backup-'))
-process.env.JDWEB_DB_PATH = join(root, 'live.sqlite')
-process.env.JDWEB_SESSION_SECRET = 'test-secret-for-jdweb-backup'
-process.env.JDWEB_DATA_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+process.env.JDWEB2_DB_PATH = join(root, 'live.sqlite')
+process.env.JDWEB2_SESSION_SECRET = 'test-secret-for-jdweb-backup'
+process.env.JDWEB2_DATA_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
 const { closeDb, getDb, initDb } = await import('./db.js')
 const { restoreBackupBytes } = await import('./backup.js')

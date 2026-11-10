@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * First-run setup API smoke: empty DB (no JDWEB_USER seed), localhost admin bootstrap.
+ * First-run setup API smoke: empty DB (no JDWEB2_USER seed), localhost admin bootstrap.
  */
 import { spawn } from 'node:child_process'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 
 const root = resolve(import.meta.dirname, '..')
 const jdPort = Number(process.env.SETUP_MOCK_JD_PORT || 13129)
-const port = Number(process.env.SETUP_JDWEB_PORT || 8788)
+const port = Number(process.env.SETUP_JDWEB2_PORT || 8788)
 const base = `http://127.0.0.1:${port}`
 const dataDir = join(tmpdir(), `jdweb-setup-api-${process.pid}`)
 const dbPath = join(dataDir, 'setup.sqlite')
@@ -74,18 +74,18 @@ async function main() {
 
   // Clear inherited seed creds so needsSetup stays true (dotenv won't override set keys).
   const server = run('node', ['server/dist/index.js'], {
-    JDWEB_HOST: '127.0.0.1',
-    JDWEB_PORT: String(port),
+    JDWEB2_HOST: '127.0.0.1',
+    JDWEB2_PORT: String(port),
     JD_API_URL: `http://127.0.0.1:${jdPort}`,
-    JDWEB_DB_PATH: dbPath,
-    JDWEB_STAGING_DIR: stagingDir,
-    JDWEB_MOVIES_DIR: moviesDir,
-    JDWEB_SHOWS_DIR: showsDir,
-    JDWEB_OTHER_DIR: otherDir,
-    JDWEB_SESSION_SECRET: 'e2e-setup-session-secret-not-for-prod',
-    JDWEB_DATA_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-    JDWEB_USER: '',
-    JDWEB_PASSWORD: '',
+    JDWEB2_DB_PATH: dbPath,
+    JDWEB2_STAGING_DIR: stagingDir,
+    JDWEB2_MOVIES_DIR: moviesDir,
+    JDWEB2_SHOWS_DIR: showsDir,
+    JDWEB2_OTHER_DIR: otherDir,
+    JDWEB2_SESSION_SECRET: 'e2e-setup-session-secret-not-for-prod',
+    JDWEB2_DATA_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    JDWEB2_USER: '',
+    JDWEB2_PASSWORD: '',
   })
 
   try {

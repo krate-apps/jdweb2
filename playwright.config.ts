@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test'
 
-const port = Number(process.env.JDWEB_PORT || 8787)
+const port = Number(process.env.JDWEB2_PORT || 8787)
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,7 +22,7 @@ export default defineConfig({
     },
     {
       command:
-        'JDWEB_HOST=127.0.0.1 JDWEB_PORT=8787 JD_API_URL=http://127.0.0.1:13128 JDWEB_DB_PATH=./data/e2e.sqlite JDWEB_USER=admin JDWEB_PASSWORD=password123 JDWEB_SESSION_SECRET=e2e-session-secret-not-for-prod JDWEB_DATA_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef node server/dist/index.js',
+        'JDWEB2_HOST=127.0.0.1 JDWEB2_PORT=8787 JD_API_URL=http://127.0.0.1:13128 JDWEB2_DB_PATH=./data/e2e.sqlite JDWEB2_USER=admin JDWEB2_PASSWORD=password123 JDWEB2_SESSION_SECRET=e2e-session-secret-not-for-prod JDWEB2_DATA_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef node server/dist/index.js',
       url: 'http://127.0.0.1:8787/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,

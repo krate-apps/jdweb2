@@ -6,8 +6,8 @@ DOCS_SRC="${ROOT}/docs"
 TMP="$(mktemp -d)"
 trap 'rm -rf "${TMP}"' EXIT
 
-git clone --depth 1 "https://github.com/krate-apps/jdweb2.wiki.git" "${TMP}/wiki" 2>/dev/null \
-  || git clone "https://github.com/krate-apps/jdweb2.wiki.git" "${TMP}/wiki"
+git clone --depth 1 "https://github.com/krate-apps/jdweb.wiki.git" "${TMP}/wiki" 2>/dev/null \
+  || git clone "https://github.com/krate-apps/jdweb.wiki.git" "${TMP}/wiki"
 
 rsync -a --delete --exclude .git "${DOCS_SRC}/" "${TMP}/wiki/"
 git -C "${TMP}/wiki" add -A

@@ -1,22 +1,23 @@
 # Reverse proxy
 
-Put a reverse proxy in front of jdweb to terminate TLS and/or mount the app under a URL path. jdweb itself speaks plain HTTP on `JDWEB_HOST`:`JDWEB_PORT` (default `127.0.0.1:8787`).
+Put a reverse proxy in front of jdweb to terminate TLS and/or mount the app under a URL path. jdweb itself speaks plain HTTP on `JDWEB2_HOST`:`JDWEB2_PORT` (default `127.0.0.1:8787`).
 
 ## Rules that always apply
 
-1. **Same path on proxy and app.** If users open `https://example.com/alice/jdweb/`, set `JDWEB_BASE_PATH=/alice/jdweb` (Compose) or Settings `basePath`, then **restart**. Proxy that exact prefix to Node **without stripping it**.
+1. **Same path on proxy and app.** If users open `https://example.com/jdweb/`, set `JDWEB2_BASE_PATH=/jdweb` (Compose) or Settings `basePath`, then **restart**. Proxy that exact prefix to Node **without stripping it**.
 2. **No UI rebuild for path prefixes.** The server injects the prefix into HTML at runtime. A mismatch still yields `/assets/...` at the host root and empty MIME / `nosniff` errors.
-3. **Keep jdweb on localhost when proxied.** Prefer `JDWEB_HOST=127.0.0.1` and do not expose port `8787` publicly.
+3. **Keep jdweb on localhost when proxied.** Prefer `JDWEB2_HOST=127.0.0.1` and do not expose port `8787` publicly.
 4. **Forward `Host`.** Cookie path follows the configured base path (or `/` when empty).
-5. **Do not strip the prefix** with `handle_path`, `uri strip_prefix`, `proxy_pass .../` tricks that drop `/alice/jdweb`, or Apache `ProxyPass` that maps to `http://127.0.0.1:8787/` without the prefix.
+5. **Do not strip the prefix** with `handle_path`, `uri strip_prefix`, `proxy_pass .../` tricks that drop `/jdweb`, or Apache `ProxyPass` that maps to `http://127.0.0.1:8787/` without the prefix.
 
 ### Quick matrix
 
-| Public URL | `JDWEB_BASE_PATH` | Proxy must forward |
-|------------|-------------------|--------------------|
-| `https://example.com/alice/jdweb/` | `/alice/jdweb` | `/alice/jdweb` and `/alice/jdweb/*` |
-| `https://alice.example.com/jdweb/` | `/jdweb` | `/jdweb` and `/jdweb/*` |
-| `https://jdweb.example.com/` | *(empty)* | `/` and `/*` |
+Recommended public path is **`/jdweb`** (product name JDWeb2, URL prefix stays `/jdweb`). Nested prefixes still work if proxy and `JDWEB2_BASE_PATH` match exactly.
+
+| Public URL                   | `JDWEB2_BASE_PATH` | Proxy must forward      |
+| ---------------------------- | ------------------ | ----------------------- |
+| `https://example.com/jdweb/` | `/jdweb`           | `/jdweb` and `/jdweb/*` |
+| `https://jdweb.example.com/` | *(empty)*          | `/` and `/*`            |
 
 ---
 
@@ -26,9 +27,9 @@ Put a reverse proxy in front of jdweb to terminate TLS and/or mount the app unde
 
 ```caddy
 example.com {
-	redir /alice/jdweb /alice/jdweb/ 302
+	redir /jdweb /jdweb/ 302
 
-	@jdweb path /alice/jdweb /alice/jdweb/*
+	@jdweb path /jdweb /jdweb/*
 	handle @jdweb {
 		reverse_proxy 127.0.0.1:8787 {
 			header_up Host {host}
@@ -41,9 +42,9 @@ example.com {
 App env:
 
 ```bash
-JDWEB_HOST=127.0.0.1
-JDWEB_PORT=8787
-JDWEB_BASE_PATH=/alice/jdweb
+JDWEB2_HOST=127.0.0.1
+JDWEB2_PORT=8787
+JDWEB2_BASE_PATH=/jdweb
 ```
 
 Then restart jdweb (`pnpm start` or `docker compose up -d`).
@@ -59,13 +60,13 @@ jdweb.example.com {
 }
 ```
 
-Leave `JDWEB_BASE_PATH` / Settings `basePath` empty and restart.
+Leave `JDWEB2_BASE_PATH` / Settings `basePath` empty and restart.
 
 ### What not to do (Caddy)
 
 ```caddy
-# WRONG — strips /alice/jdweb before the upstream sees the request
-handle_path /alice/jdweb/* {
+# WRONG — strips /jdweb before the upstream sees the request
+handle_path /jdweb/* {
 	reverse_proxy 127.0.0.1:8787
 }
 ```
@@ -84,12 +85,12 @@ server {
 	# ssl_certificate     /path/fullchain.pem;
 	# ssl_certificate_key /path/privkey.pem;
 
-	location = /alice/jdweb {
-		return 302 /alice/jdweb/;
+	location = /jdweb {
+		return 302 /jdweb/;
 	}
 
 	# No URI on proxy_pass → the full request path is forwarded unchanged
-	location /alice/jdweb/ {
+	location /jdweb/ {
 		proxy_http_version 1.1;
 		proxy_pass http://127.0.0.1:8787;
 		proxy_set_header Host $host;
@@ -100,7 +101,7 @@ server {
 }
 ```
 
-`JDWEB_BASE_PATH=/alice/jdweb`, then restart jdweb.
+`JDWEB2_BASE_PATH=/jdweb`, then restart jdweb.
 
 ### Subdomain at site root
 
@@ -119,13 +120,13 @@ server {
 }
 ```
 
-Empty `JDWEB_BASE_PATH`.
+Empty `JDWEB2_BASE_PATH`.
 
 ### What not to do (nginx)
 
 ```nginx
-# WRONG — replaces /alice/jdweb/ with / on the upstream
-location /alice/jdweb/ {
+# WRONG — replaces /jdweb/ with / on the upstream
+location /jdweb/ {
 	proxy_pass http://127.0.0.1:8787/;
 }
 ```
@@ -148,16 +149,16 @@ Enable modules: `proxy`, `proxy_http`, `headers`, and usually `ssl`.
 	ProxyPreserveHost On
 	RequestHeader set X-Forwarded-Proto "https"
 
-	# Keep the /alice/jdweb prefix on the upstream URL
-	ProxyPass        /alice/jdweb http://127.0.0.1:8787/alice/jdweb
-	ProxyPassReverse /alice/jdweb http://127.0.0.1:8787/alice/jdweb
+	# Keep the /jdweb prefix on the upstream URL
+	ProxyPass        /jdweb http://127.0.0.1:8787/jdweb
+	ProxyPassReverse /jdweb http://127.0.0.1:8787/jdweb
 
 	# Optional: redirect bare prefix to trailing slash for the SPA
-	RedirectMatch ^/alice/jdweb$ /alice/jdweb/
+	RedirectMatch ^/jdweb$ /jdweb/
 </VirtualHost>
 ```
 
-`JDWEB_BASE_PATH=/alice/jdweb`, then restart.
+`JDWEB2_BASE_PATH=/jdweb`, then restart.
 
 ### Subdomain at site root
 
@@ -172,31 +173,31 @@ Enable modules: `proxy`, `proxy_http`, `headers`, and usually `ssl`.
 </VirtualHost>
 ```
 
-Empty `JDWEB_BASE_PATH`.
+Empty `JDWEB2_BASE_PATH`.
 
 ### What not to do (Apache)
 
 ```apache
 # WRONG — drops the public prefix before Node sees the path
-ProxyPass /alice/jdweb/ http://127.0.0.1:8787/
+ProxyPass /jdweb/ http://127.0.0.1:8787/
 ```
 
 ---
 
 ## Checklist after enabling a proxy
 
-1. `JDWEB_BASE_PATH` / Settings `basePath` matches the public path (or is empty for a root subdomain). Restart after changing.
+1. `JDWEB2_BASE_PATH` / Settings `basePath` matches the public path (or is empty for a root subdomain). Restart after changing.
 2. No UI rebuild is required for path prefixes (runtime injection).
-3. Open the app URL and view source: `jdweb-base-path` meta and script/link tags under `/alice/jdweb/assets/…`.
-4. `GET https://…/alice/jdweb/api/health` returns JSON.
-5. Login sets a cookie whose path matches Settings `basePath` (e.g. `/alice/jdweb`, or `/`).
+3. Open the app URL and view source: `jdweb-base-path` meta and script/link tags under `/jdweb/assets/…`.
+4. `GET https://…/jdweb/api/health` returns JSON.
+5. Login sets a cookie whose path matches Settings `basePath` (e.g. `/jdweb`, or `/`).
 
 
 ## Troubleshooting
 
-| Symptom | Likely cause |
-|---------|----------------|
-| Empty MIME / `nosniff` on `.js` / `.css` | HTML still references `/assets/...` while the proxy only serves `/alice/jdweb/*` |
-| `404` on `/api/...` from the browser | Base path mismatch, or proxy strips the prefix |
-| Login works then immediate logout | Cookie path wrong (`JDWEB_BASE_PATH` ≠ public path) |
-| UI loads, API fails CORS-like | You are hitting Vite (`5173`) through the proxy; use the production server on `8787` |
+| Symptom                                  | Likely cause                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| Empty MIME / `nosniff` on `.js` / `.css` | HTML still references `/assets/...` while the proxy only serves `/jdweb/*`     |
+| `404` on `/api/...` from the browser     | Base path mismatch, or proxy strips the prefix                                       |
+| Login works then immediate logout        | Cookie path wrong (`JDWEB2_BASE_PATH` ≠ public path)                                 |
+| UI loads, API fails CORS-like            | You are hitting Vite (`5173`) through the proxy; use the production server on `8787` |

@@ -14,7 +14,7 @@ if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
   process.exit(1)
 }
 
-const image = `ghcr.io/krate-apps/jdweb2:${version}`
+const image = `ghcr.io/krate-apps/jdweb:${version}`
 
 function bumpPackageJson(relPath) {
   const path = resolve(root, relPath)
@@ -27,9 +27,9 @@ function replaceImageTags(relPath) {
   const path = resolve(root, relPath)
   let text = readFileSync(path, 'utf8')
   const next = text
-    .replace(/ghcr\.io\/krate-apps\/jdweb2?:\d+\.\d+\.\d+/g, image)
+    .replace(/ghcr\.io\/krate-apps\/jdweb:\d+\.\d+\.\d+/g, image)
     .replace(/<!-- jdweb-version -->[\s\S]*?<!-- \/jdweb-version -->/g, `<!-- jdweb-version -->${version}<!-- /jdweb-version -->`)
-  if (next === text && !text.includes('ghcr.io/krate-apps/jdweb2:')) {
+  if (next === text && !text.includes('ghcr.io/krate-apps/jdweb:')) {
     console.warn(`warn: no GHCR image tag found in ${relPath}`)
   }
   writeFileSync(path, next)
