@@ -2,7 +2,10 @@
 
 FROM node:26-bookworm-slim AS build
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@9.7.0 --activate
+# Node 25+ no longer ships Corepack; install it explicitly for pnpm.
+RUN npm install --global corepack@0.36.0 \
+  && corepack enable \
+  && corepack prepare pnpm@9.7.0 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY web/package.json web/
 COPY server/package.json server/
@@ -16,7 +19,9 @@ RUN pnpm build
 FROM node:26-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-RUN corepack enable && corepack prepare pnpm@9.7.0 --activate
+RUN npm install --global corepack@0.36.0 \
+  && corepack enable \
+  && corepack prepare pnpm@9.7.0 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY server/package.json server/
 RUN pnpm install --frozen-lockfile --filter ./server --prod
