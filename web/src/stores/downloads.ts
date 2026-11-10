@@ -4,7 +4,6 @@ import type { DownloadLink, PackageInfo } from '@/api/jd'
 import { extractionStateFromStatus } from '@/api/jd'
 import * as jd from '@/api/jd'
 import { i18n } from '@/i18n'
-import { notifyWebhook } from '@/api/webhooks'
 import { useAppStore } from './app'
 
 export const useDownloadsStore = defineStore('downloads', () => {
@@ -31,16 +30,10 @@ export const useDownloadsStore = defineStore('downloads', () => {
 
   function noteFinishedTransitions(prevFinished: Set<number>) {
     const app = useAppStore()
+    if (!app.showCompletionToasts) return
     for (const pkg of packages.value) {
       if (!pkg.finished || prevFinished.has(pkg.uuid)) continue
-      if (app.showCompletionToasts) {
-        app.addToast(i18n.global.t('settings.downloadComplete', { name: pkg.name }))
-      }
-      void notifyWebhook('download.finished', {
-        uuid: pkg.uuid,
-        name: pkg.name,
-        saveTo: pkg.saveTo,
-      }).catch(() => undefined)
+      app.addToast(i18n.global.t('settings.downloadComplete', { name: pkg.name }))
     }
   }
 

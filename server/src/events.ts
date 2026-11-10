@@ -1,6 +1,7 @@
 import { jdCall, probeJdApi } from './jd.js'
 import { getAppSettings } from './settings.js'
 import { log } from './log.js'
+import { dispatchWebhook } from './webhooks.js'
 
 export type JdStatusEvent = { ok: true } | { ok: false; error: string }
 
@@ -70,6 +71,25 @@ let lastDownloads: DownloadsEvent | null = null
 let lastGrabber: GrabberEvent | null = null
 let lastDialogs: DialogsEvent | null = null
 let lastStatus: JdStatusEvent | null = null
+/** Package uuids already reported as finished for download.finished webhooks. */
+let prevFinished = new Set<number>()
+
+type FinishedPackage = { uuid?: number; name?: string; saveTo?: string; finished?: boolean }
+
+function noteFinishedPackages(packages: unknown[]): void {
+  const pkgs = packages as FinishedPackage[]
+  for (const pkg of pkgs) {
+    if (!pkg.finished || pkg.uuid == null || prevFinished.has(pkg.uuid)) continue
+    void dispatchWebhook({
+      event: 'download.finished',
+      at: new Date().toISOString(),
+      package: { uuid: pkg.uuid, name: pkg.name ?? '', saveTo: pkg.saveTo },
+    })
+  }
+  prevFinished = new Set(
+    pkgs.filter((p) => p.finished && p.uuid != null).map((p) => p.uuid as number),
+  )
+}
 
 function eventsIntervalMs(): number {
   const raw = process.env.JDWEB_EVENTS_INTERVAL_MS
@@ -128,6 +148,7 @@ async function tick(): Promise<void> {
     lastGrabber = { links: grabberLinks ?? [] }
     lastDialogs = { dialogs }
     lastStatus = { ok: true }
+    noteFinishedPackages(lastDownloads.packages)
     await broadcast('downloads', lastDownloads)
     await broadcast('grabber', lastGrabber)
     await broadcast('dialogs', lastDialogs)
