@@ -4,6 +4,7 @@ const port = Number(process.env.JDWEB_PORT || 8787)
 
 export default defineConfig({
   testDir: './e2e',
+  testMatch: /smoke\.spec\.ts/,
   timeout: 60_000,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,

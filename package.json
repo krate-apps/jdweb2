@@ -12,8 +12,8 @@
     "rebuild": "pnpm build && pnpm --filter ./server start",
     "typecheck": "pnpm --filter ./web typecheck && pnpm --filter ./server typecheck",
     "test": "pnpm --filter ./server test && pnpm --filter ./web test",
-    "test:e2e": "node e2e/api-smoke.mjs",
-    "test:e2e:ui": "pnpm dlx @playwright/test@1.61.0 test",
+    "test:e2e": "node e2e/api-smoke.mjs && node e2e/setup-api.mjs",
+    "test:e2e:ui": "pnpm dlx @playwright/test@1.61.0 test && pnpm dlx @playwright/test@1.61.0 test -c playwright.setup.config.ts",
     "docs:publish": "./scripts/publish-docs.sh",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run"
