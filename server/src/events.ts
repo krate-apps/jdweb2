@@ -156,6 +156,12 @@ async function tick(): Promise<void> {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unreachable'
     lastStatus = { ok: false, error: message }
+    lastDownloads = { links: [], packages: [], engineState: 'UNKNOWN' }
+    lastGrabber = { links: [] }
+    lastDialogs = { dialogs: [] }
+    await broadcast('downloads', lastDownloads)
+    await broadcast('grabber', lastGrabber)
+    await broadcast('dialogs', lastDialogs)
     await broadcast('jd.status', lastStatus)
     // Keep probing lightly so reconnect is noticed without hammering.
     const probe = await probeJdApi(getAppSettings().jdApiUrl)

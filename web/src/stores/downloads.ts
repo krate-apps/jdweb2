@@ -5,6 +5,7 @@ import { extractionStateFromStatus } from '@/api/jd'
 import * as jd from '@/api/jd'
 import { i18n } from '@/i18n'
 import { useAppStore } from './app'
+import { useGrabberStore } from './grabber'
 
 export const useDownloadsStore = defineStore('downloads', () => {
   const links = ref<DownloadLink[]>([])
@@ -53,6 +54,14 @@ export const useDownloadsStore = defineStore('downloads', () => {
     noteFinishedTransitions(prevFinished)
   }
 
+  /** Drop cached rows when JD is unreachable (do not mark connected). */
+  function clearLists() {
+    links.value = []
+    packages.value = []
+    engineState.value = 'UNKNOWN'
+    selected.value = new Set()
+  }
+
   async function refresh() {
     const app = useAppStore()
     const [l, p, state] = await Promise.all([
@@ -76,6 +85,8 @@ export const useDownloadsStore = defineStore('downloads', () => {
       try {
         await refresh()
       } catch (err) {
+        clearLists()
+        useGrabberStore().applySnapshot([])
         app.markJdError(err instanceof Error ? err.message : 'unreachable')
       }
     }
@@ -185,6 +196,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     activeConnections,
     linksForPackage,
     applySnapshot,
+    clearLists,
     refresh,
     startPolling,
     stopPolling,

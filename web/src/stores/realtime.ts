@@ -39,8 +39,14 @@ export const useRealtimeStore = defineStore('realtime', () => {
 
   function applyStatus(payload: { ok: boolean; error?: string }) {
     const app = useAppStore()
-    if (payload.ok) app.markJdOk()
-    else app.markJdError(payload.error)
+    if (payload.ok) {
+      app.markJdOk()
+      return
+    }
+    useDownloadsStore().clearLists()
+    useGrabberStore().applySnapshot([])
+    dialogs.value = []
+    app.markJdError(payload.error)
   }
 
   function applyDialogs(payload: { dialogs?: DialogInfo[] }) {
