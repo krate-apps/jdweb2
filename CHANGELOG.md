@@ -1,3 +1,25 @@
+## [1.1.0](https://github.com/krate-apps/jdweb/compare/v1.0.0...v1.1.0) (2026-11-10)
+
+### Features
+
+* add live events, staging, backup, OIDC routes, and self-hosted fonts ([ec1d542](https://github.com/krate-apps/jdweb/commit/ec1d542cc75b07dd82556f0655a50d46e0a8d251))
+* browse and delete files under the staging folder ([a864460](https://github.com/krate-apps/jdweb/commit/a8644600648bc07a3690510259e93c5f0e2c5b60))
+* derive archive extraction state for package rows ([097289e](https://github.com/krate-apps/jdweb/commit/097289eaf59a2bcb175c1361b19003578d41cab3))
+* export and restore the SQLite database from Settings ([c7b1086](https://github.com/krate-apps/jdweb/commit/c7b10864cff387015738d1f94ae6a1eaf5e017b1))
+* optional OIDC SSO login with PKCE ([eb41183](https://github.com/krate-apps/jdweb/commit/eb411832087ba0becfefb1e031d1f160fb6a3539))
+* push downloads and grabber updates over SSE ([970ef8a](https://github.com/krate-apps/jdweb/commit/970ef8aad54e2d4f7c50156e8b6e9904376bdcc6))
+* surface JDownloader captcha and generic dialogs ([d412361](https://github.com/krate-apps/jdweb/commit/d4123612ee25de6482e59965f095871c9c70a0ca))
+
+### Bug Fixes
+
+* serve hashed assets under path prefixes without SW breakage ([2f91bde](https://github.com/krate-apps/jdweb/commit/2f91bdeb3874294e2acb544134b44fef2927b495))
+
+### User Experience
+
+* add PWA manifest and minimal offline shell ([f5d3f6b](https://github.com/krate-apps/jdweb/commit/f5d3f6b9f5095e4b0acd7f27d09adf0d639f3822))
+* add search filters and JDownloader retry in the chrome ([3c6558a](https://github.com/krate-apps/jdweb/commit/3c6558a66d4a3721ac0e9068abc1ea73d7dd83f3))
+* show pointer cursor on clickable controls ([97dd56b](https://github.com/krate-apps/jdweb/commit/97dd56be8d6ed23e966a1fd61fe3598230865cbf))
+
 ## 1.0.0 (2026-11-09)
 
 ### Features
