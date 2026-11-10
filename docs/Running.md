@@ -136,4 +136,4 @@ pnpm test:e2e             # API smoke + first-run setup API
 pnpm test:e2e:ui          # Playwright (logged-in smoke + setup wizard)
 ```
 
-CI runs typecheck, unit tests, build, and e2e on pull requests and pushes to `main` (`.github/workflows/ci.yml`). On `main`, release + Docker publish run only after that check job succeeds.
+CI runs typecheck, unit tests, build, and e2e on pull requests and pushes to `main` / `develop` (`.github/workflows/ci.yml`). On `main`, release + Docker (`:latest` / `:X.Y.Z`) run only after that check job succeeds. On `develop`, Docker publishes `:develop` after check (no semver release).

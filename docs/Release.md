@@ -2,6 +2,8 @@
 
 jdweb versions with **semantic-release** on pushes to **`main` only**, after the CI `check` job succeeds (same workflow: `.github/workflows/ci.yml`). PRs and other branches never release. CI and release never run in parallel on the same ref.
 
+Pushes to **`develop`** run `check`, then publish a rolling Docker image `ghcr.io/krate-apps/jdweb:develop` (plus `develop-<sha>`). No semver release on `develop`.
+
 ## Version rules
 
 | Commit type | Bump |
@@ -21,6 +23,11 @@ Current published image: `ghcr.io/krate-apps/jdweb:1.2.2` (<!-- jdweb-version --
 3. Updates the GHCR tag in `docker-compose.yml` and docs
 4. Creates git tag `vX.Y.Z` and a GitHub Release
 5. Builds and pushes `ghcr.io/krate-apps/jdweb:X.Y.Z` and `:latest`
+
+| Branch | Image tags |
+|--------|------------|
+| `main` (after a release) | `:X.Y.Z`, `:latest` |
+| `develop` (after green CI) | `:develop`, `:develop-<full-sha>` |
 
 ## Baseline
 
