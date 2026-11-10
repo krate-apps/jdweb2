@@ -8,7 +8,6 @@
   <a href="https://github.com/krate-apps/jdweb/actions/workflows/ci.yml"><img src="https://github.com/krate-apps/jdweb/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/krate-apps/jdweb/releases"><img src="https://img.shields.io/github/v/release/krate-apps/jdweb" alt="Release" /></a>
   <a href="https://github.com/krate-apps/jdweb/pkgs/container/jdweb"><img src="https://img.shields.io/badge/GHCR-krate--apps%2Fjdweb-blue" alt="GHCR" /></a>
-  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node.js" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Unlicense-lightgrey" alt="Unlicense" /></a>
 </p>
 
@@ -20,15 +19,9 @@ Browser ──HTTPS──▶ reverse proxy ──HTTP──▶ jdweb (:8787)
                                               └── HTTP ──▶ JDownloader local API
 ```
 
-## Requirements
-
-| | |
-|---|---|
-| **Node.js** | `>=22` (`engines` in `package.json`; **26** in CI and the Docker image) |
-| **pnpm** | **9.7.0** (`packageManager` field — `corepack enable` then `corepack prepare`) |
-| **JDownloader 2** | Local HTTP API enabled |
-
 ## Quick start
+
+Needs Node.js, pnpm, and JDownloader with the local HTTP API enabled. Tooling pins live in `package.json`.
 
 ```bash
 pnpm install && pnpm build && pnpm start
@@ -43,13 +36,15 @@ curl -sS -X POST http://127.0.0.1:8787/api/setup/admin \
   -d '{"username":"admin","password":"password123"}'
 ```
 
-**Docker** (`ghcr.io/krate-apps/jdweb:1.2.2` · <!-- jdweb-version -->1.2.2<!-- /jdweb-version -->):
+**Docker:**
 
 ```bash
 docker compose up -d
 ```
 
 Path prefix without rebuild: `JDWEB_BASE_PATH=/alice/jdweb docker compose up -d`.
+
+<!-- jdweb-version -->1.2.2<!-- /jdweb-version -->
 
 ## Documentation
 
