@@ -1,3 +1,9 @@
+## [1.2.2](https://github.com/krate-apps/jdweb/compare/v1.2.1...v1.2.2) (2026-11-10)
+
+### Bug Fixes
+
+* **e2e:** assert visible empty-state copy after login ([227ac3c](https://github.com/krate-apps/jdweb/commit/227ac3c82f442a05cdf78c198aab413fac67f899))
+
 ## [1.2.1](https://github.com/krate-apps/jdweb/compare/v1.2.0...v1.2.1) (2026-11-10)
 
 ### Bug Fixes

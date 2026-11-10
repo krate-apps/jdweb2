@@ -74,7 +74,7 @@ Adjust paths and ensure `pnpm build` has been run as that user (or deploy prebui
 
 ## Docker
 
-Default: pull the published image `ghcr.io/krate-apps/jdweb:1.2.1` (<!-- jdweb-version -->1.2.1<!-- /jdweb-version -->).
+Default: pull the published image `ghcr.io/krate-apps/jdweb:1.2.2` (<!-- jdweb-version -->1.2.2<!-- /jdweb-version -->).
 
 ```bash
 cp .env.example .env   # optional

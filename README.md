@@ -38,11 +38,11 @@ Secrets are written to `data/secrets.env` on first boot if missing. Open the UI 
 | Production UI/API | http://127.0.0.1:8787 |
 | Dev (`pnpm dev`) | UI http://127.0.0.1:5173 · API :8787 |
 
-**Docker** (published image <!-- jdweb-version -->1.2.1<!-- /jdweb-version -->)
+**Docker** (published image <!-- jdweb-version -->1.2.2<!-- /jdweb-version -->)
 
 ```bash
 docker compose up -d
-# pulls ghcr.io/krate-apps/jdweb:1.2.1
+# pulls ghcr.io/krate-apps/jdweb:1.2.2
 ```
 
 Path prefix (no rebuild): `JDWEB_BASE_PATH=/alice/jdweb docker compose up -d`. See **[docs/Reverse-proxy.md](docs/Reverse-proxy.md)** and **[docs/Release.md](docs/Release.md)**.
